@@ -1,0 +1,23 @@
+/* Pantone-inspired brand palette — web hex approximations for TSX / TPG / TPM / C */
+:root {
+  /* Sun Glare — 13-0663 TSX */
+  --pantone-sun-glare: #ddf700;
+  /* Exuberant Orange — 17-1363 TSX */
+  --pantone-exuberant-orange: #ff5533;
+  /* Blue Violet — 2725 C */
+  --pantone-blue-violet: #685bc7;
+  /* Cloud Dancer — 11-4201 TPG */
+  --pantone-cloud-dancer: #ede9e2;
+  /* Darkest Hour — 20-0199 TPM */
+  --pantone-darkest-hour: #161616;
+
+  --cream: var(--pantone-cloud-dancer);
+  --ink: var(--pantone-darkest-hour);
+  --rust: var(--pantone-exuberant-orange);
+  --accent-violet: var(--pantone-blue-violet);
+  --accent-lime: var(--pantone-sun-glare);
+  --muted: #6e6962;
+  --warm-white: #f7f4ef;
+  --pale: #e6e2da;
+  --text: var(--ink);
+}

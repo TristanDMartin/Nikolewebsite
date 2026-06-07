@@ -1,0 +1,71 @@
+/* Shared primitives — landing + portfolio */
+
+.site-panel-label {
+  font-family: 'Raleway', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--rust);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.site-panel-label::before {
+  content: '';
+  display: block;
+  width: 28px;
+  height: 1px;
+  background: var(--rust);
+  flex-shrink: 0;
+}
+
+.site-panel-label--on-dark {
+  color: var(--rust);
+}
+
+.site-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: 'Raleway', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink);
+  border: 1px solid rgba(22, 22, 22, 0.18);
+  border-radius: 100px;
+  padding: 0.85rem 1.75rem;
+  text-decoration: none;
+  background: none;
+  cursor: pointer;
+  transition:
+    border-color 0.3s ease,
+    background 0.3s ease,
+    color 0.3s ease;
+}
+
+.site-cta-btn:hover,
+.site-cta-btn:focus-visible {
+  border-color: var(--rust);
+  background: rgba(255, 85, 51, 0.08);
+}
+
+.site-cta-btn--on-dark {
+  color: var(--cream);
+  border-color: rgba(237, 233, 226, 0.35);
+}
+
+.site-cta-btn--on-dark:hover,
+.site-cta-btn--on-dark:focus-visible {
+  border-color: var(--cream);
+  background: rgba(237, 233, 226, 0.08);
+  color: var(--cream);
+}
+
+.site-cta-btn--disabled {
+  opacity: 0.35;
+  pointer-events: none;
+  cursor: not-allowed;
+}

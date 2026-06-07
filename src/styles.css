@@ -13,6 +13,10 @@
   box-sizing: border-box;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 html,
 body {
   margin: 0;
@@ -37,6 +41,8 @@ a {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 .site-header {
@@ -146,6 +152,12 @@ main {
   max-width: var(--max-width);
   width: 100%;
   margin: 0 auto;
+}
+
+@media (max-width: 1100px) {
+  .projects {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .project-card {
@@ -892,6 +904,129 @@ main {
   margin-right: auto;
 }
 
+.portfolio-work-intro {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.portfolio-intro-slides {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.5rem, 1.8vw, 1rem);
+  padding: 0 clamp(0.75rem, 3vw, 2rem);
+  pointer-events: none;
+}
+
+.portfolio-intro-slide {
+  flex: 0 0 clamp(120px, 24vw, 260px);
+  aspect-ratio: 4 / 5;
+  max-height: min(44vh, 380px);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at 30% 20%,
+      rgba(255, 255, 255, 0.35),
+      transparent 50%
+    ),
+    linear-gradient(145deg, #dfe3ef 0%, #cfd5e8 100%);
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
+  opacity: 0;
+  transform: translateX(125%) scale(0.94);
+}
+
+.portfolio-intro-slide--video-intrinsic {
+  flex: 0 0 auto;
+  width: min(78vw, 480px);
+  max-width: 520px;
+  aspect-ratio: unset;
+  max-height: none;
+  height: auto;
+}
+
+.portfolio-work-intro--animate .portfolio-intro-slide--1 {
+  animation: portfolio-intro-card 2.85s cubic-bezier(0.4, 0, 0.2, 1) 0.06s
+    forwards;
+}
+
+.portfolio-work-intro--animate .portfolio-intro-slide--2 {
+  animation: portfolio-intro-card 2.85s cubic-bezier(0.4, 0, 0.2, 1) 0.28s
+    forwards;
+}
+
+.portfolio-work-intro--animate .portfolio-intro-slide--3 {
+  animation: portfolio-intro-card 2.85s cubic-bezier(0.4, 0, 0.2, 1) 0.5s
+    forwards;
+}
+
+@keyframes portfolio-intro-card {
+  0% {
+    opacity: 0;
+    transform: translateX(125%) scale(0.94);
+  }
+  17% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  58% {
+    opacity: 1;
+    transform: translateX(-12%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-135%) scale(0.96);
+  }
+}
+
+.portfolio-intro-copy {
+  position: relative;
+  z-index: 1;
+}
+
+.portfolio-work-intro--animate .portfolio-intro-copy {
+  animation: portfolio-intro-copy-fade 2.85s cubic-bezier(0.4, 0, 0.2, 1)
+    forwards;
+}
+
+@keyframes portfolio-intro-copy-fade {
+  0%,
+  11% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  30%,
+  56% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  76%,
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-intro-slide {
+    display: none;
+  }
+
+  .portfolio-work-intro--animate .portfolio-intro-slide--1,
+  .portfolio-work-intro--animate .portfolio-intro-slide--2,
+  .portfolio-work-intro--animate .portfolio-intro-slide--3,
+  .portfolio-work-intro--animate .portfolio-intro-copy {
+    animation: none !important;
+  }
+}
+
 .portfolio-grid-section {
   padding: 100px 0;
 }
@@ -934,6 +1069,20 @@ main {
   aspect-ratio: 4 / 5;
 }
 
+.portfolio-item--video-intrinsic {
+  aspect-ratio: unset;
+  height: auto;
+  align-self: start;
+}
+
+.portfolio-item--video-intrinsic .portfolio-item-link {
+  height: auto;
+}
+
+.portfolio-item--video-intrinsic .portfolio-item-image-wrapper {
+  height: auto;
+}
+
 .portfolio-item-link {
   display: block;
   width: 100%;
@@ -948,6 +1097,24 @@ main {
   height: 100%;
   position: relative;
   overflow: hidden;
+}
+
+.portfolio-item-image-wrapper:has(.pcv--intrinsic) {
+  background:
+    radial-gradient(
+      circle at 25% 25%,
+      rgba(255, 255, 255, 0.9),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 75% 30%,
+      rgba(255, 255, 255, 0.7),
+      transparent 45%
+    ),
+    linear-gradient(145deg, #dfe3ef 0%, #cfd5e8 100%);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .portfolio-item-image {
@@ -978,6 +1145,7 @@ main {
 .portfolio-item-overlay {
   position: absolute;
   inset: 0;
+  z-index: 2;
   background: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0) 0%,
@@ -1301,8 +1469,8 @@ main {
 
 .about-content {
   display: grid;
-  grid-template-columns: 1fr 1.5fr;
-  gap: 64px;
+  grid-template-columns: minmax(220px, 0.72fr) minmax(0, 2.35fr);
+  gap: 72px;
   align-items: start;
 }
 
@@ -1310,19 +1478,20 @@ main {
   width: 100%;
 }
 
-.about-image-placeholder {
+.about-image-photo {
+  display: block;
   width: 100%;
   aspect-ratio: 3 / 4;
-  background:
-    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.9), transparent 55%),
-    radial-gradient(circle at 75% 30%, rgba(255, 255, 255, 0.7), transparent 45%),
-    linear-gradient(145deg, #dfe3ef 0%, #cfd5e8 100%);
+  object-fit: cover;
+  object-position: center top;
   border-radius: 8px;
 }
 
 .about-text {
   display: grid;
   gap: 32px;
+  width: 100%;
+  max-width: none;
 }
 
 .about-section-title {
@@ -1338,8 +1507,9 @@ main {
   margin: 0 0 32px;
   color: var(--text);
   font-size: clamp(22px, 2.5vw, 28px);
-  line-height: 1.6;
+  line-height: 1.65;
   font-weight: 600;
+  max-width: none;
 }
 
 .body-stack {
@@ -1351,7 +1521,8 @@ main {
   margin: 0;
   color: #2b2b2b;
   font-size: clamp(17px, 1.9vw, 20px);
-  line-height: 1.8;
+  line-height: 1.85;
+  max-width: none;
 }
 
 .body-list {
@@ -1467,6 +1638,35 @@ main {
     grid-template-columns: 1fr;
     gap: 24px;
   }
+
+  .portfolio-hero-title {
+    font-size: clamp(2.1rem, 10vw, 3.25rem);
+    margin-bottom: 1.25rem;
+  }
+
+  .about-contact {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .about-hero {
+    padding: 4.5rem 1.5rem 2.5rem;
+  }
+
+  .brand-marquee__logo {
+    height: 2.25rem;
+    max-width: 8.5rem;
+  }
+
+  .portfolio-intro-slides {
+    gap: 0.35rem;
+    padding: 0 0.5rem;
+  }
+
+  .portfolio-intro-slide {
+    flex: 0 0 clamp(68px, 21vw, 110px);
+    max-height: min(30vh, 190px);
+  }
 }
 
 .about-clients {
@@ -1506,6 +1706,112 @@ main {
   transform: translateY(-2px);
   background: rgba(237, 91, 93, 0.1);
   border-color: rgba(237, 91, 93, 0.4);
+}
+
+.brand-marquee {
+  overflow: hidden;
+  width: 100%;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 5%,
+    #000 95%,
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 5%,
+    #000 95%,
+    transparent
+  );
+}
+
+.brand-marquee__track {
+  display: flex;
+  align-items: center;
+  gap: clamp(2.5rem, 5vw, 4.5rem);
+  width: max-content;
+  animation: brand-marquee-scroll 48s linear infinite;
+}
+
+@keyframes brand-marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.brand-marquee__item {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+  min-width: 5.5rem;
+  padding: 0.35rem 0.5rem;
+}
+
+.brand-marquee__logo {
+  display: block;
+  height: 2.75rem;
+  width: auto;
+  min-width: 4rem;
+  max-width: 11rem;
+  object-fit: contain;
+  object-position: center;
+  opacity: 0.92;
+  filter: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.brand-marquee__item:hover .brand-marquee__logo {
+  opacity: 1;
+  transform: scale(1.04);
+}
+
+.brand-marquee__fallback {
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(22, 22, 22, 0.55);
+  white-space: nowrap;
+}
+
+.brand-marquee__name {
+  font-family: 'Raleway', sans-serif;
+  font-size: clamp(0.7rem, 1.1vw, 0.85rem);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(22, 22, 22, 0.5);
+  white-space: nowrap;
+}
+
+.about-brand-marquee {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-marquee {
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+
+  .brand-marquee__track {
+    animation: none;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
+    gap: 1rem 1.5rem;
+  }
 }
 
 .cta-row,
@@ -2256,11 +2562,6 @@ main {
     gap: 48px;
     padding: 0 24px;
   }
-
-  .instagram-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-  }
 }
 
 @media (max-width: 960px) {
@@ -2273,7 +2574,7 @@ main {
   }
 
   .instagram-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     max-width: 100%;
     gap: 16px;
   }
@@ -2354,6 +2655,17 @@ main {
   .client-badge {
     padding: 8px 16px;
     font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .instagram-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .instagram-widget-iframe {
+    min-height: 420px;
   }
 }
 

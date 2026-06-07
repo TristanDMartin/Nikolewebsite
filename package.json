@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "sync:brand-logos": "node scripts/sync-brand-logos.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

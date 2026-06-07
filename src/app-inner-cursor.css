@@ -1,0 +1,63 @@
+body.portfolio-experience {
+  cursor: none;
+}
+
+.app-inner-cursor-dot {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  background: var(--pantone-exuberant-orange);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 10001;
+  transform: translate(-50%, -50%);
+  transition: background 0.2s;
+}
+
+.app-inner-cursor-ring {
+  position: fixed;
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid var(--pantone-exuberant-orange);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 10000;
+  transform: translate(-50%, -50%);
+  transition:
+    width 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.25s,
+    left 0.08s linear,
+    top 0.08s linear;
+}
+
+.app-inner-cursor-ring.expand {
+  width: 64px;
+  height: 64px;
+  opacity: 0.6;
+}
+
+.app-inner-cursor-dot.is-light {
+  background: var(--pantone-cloud-dancer);
+  box-shadow: 0 0 0 1px rgba(26, 23, 20, 0.22);
+}
+
+.app-inner-cursor-ring.is-light {
+  border-color: rgba(245, 240, 232, 0.92);
+  box-shadow: 0 0 0 1px rgba(26, 23, 20, 0.12);
+}
+
+.app-inner-cursor-ring.is-light.expand {
+  border-color: rgba(245, 240, 232, 0.78);
+}
+
+@media (pointer: coarse) {
+  body.portfolio-experience {
+    cursor: auto;
+  }
+
+  .app-inner-cursor-dot,
+  .app-inner-cursor-ring {
+    display: none !important;
+  }
+}
