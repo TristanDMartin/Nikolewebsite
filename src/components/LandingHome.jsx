@@ -19,6 +19,7 @@ import BrandMarquee from './BrandMarquee';
 import LandingCategoriesPanel from './LandingCategoriesPanel';
 import InstagramFeed from './InstagramFeed';
 import ProjectCardVideo from './ProjectCardVideo';
+import HeroScrollImage from './HeroScrollImage';
 import '../landing.css';
 
 const PANEL_COUNT = 7;
@@ -247,6 +248,10 @@ export default function LandingHome() {
     !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   );
   const splashTimerRef = useRef(null);
+  const p1PanelRef = useRef(null);
+  const [isLandingMobile, setIsLandingMobile] = useState(() =>
+    typeof window !== 'undefined' ? isLandingMobileViewport() : false,
+  );
 
   const dismissSplash = useCallback(() => {
     if (splashTimerRef.current != null) {
@@ -486,6 +491,7 @@ export default function LandingHome() {
     );
     const syncLayoutMode = () => {
       const isMobile = mq.matches;
+      setIsLandingMobile(isMobile);
       landingPageRef.current?.classList.toggle('landing-mobile', isMobile);
       if (isMobile) {
         targetXRef.current = 0;
@@ -863,7 +869,7 @@ export default function LandingHome() {
 
       <div className="track-wrapper">
         <div className="track" ref={trackRef} id="track">
-          <section className="panel p1" aria-label="Introduction">
+          <section className="panel p1" aria-label="Introduction" ref={p1PanelRef}>
             <div className="p1-grid-lines" aria-hidden="true" />
             <div className="p1-bg-word" aria-hidden="true">
               DESIGN
@@ -897,6 +903,11 @@ export default function LandingHome() {
                 </svg>
               </button>
             </div>
+            <HeroScrollImage
+              isMobile={isLandingMobile}
+              desktopScrollRef={currentXRef}
+              scrollTargetRef={p1PanelRef}
+            />
             <div className="p1-year" aria-hidden="true">
               NG — 2026
             </div>
