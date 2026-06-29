@@ -3,6 +3,11 @@ node_modules/
 package-lock.json
 .venv-img/
 
+# Build outputs
+dist/
+build/
+*.orig
+
 # Large source media (keep locally; GitHub rejects files over 100MB)
 src/assets/videos/
 public/images/prismacolor-instagram-videos/2_Koi_PN_11-17.mp4
