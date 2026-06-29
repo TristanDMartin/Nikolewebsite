@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "rm -rf dist && vite build",
+    "build": "rm -rf dist && vite build && cp dist/index.html dist/404.html",
     "sync:brand-logos": "node scripts/sync-brand-logos.mjs",
     "check:images": "node scripts/check-portfolio-images.mjs",
     "validate:paths": "node scripts/validate-project-paths.mjs",
+    "optimize:images": "node scripts/optimize-portfolio-images.mjs",
+    "optimize:videos": "node scripts/optimize-videos.mjs",
     "setup:image-folders": "node scripts/setup-project-image-folders.mjs",
     "preview": "vite preview"
   },
@@ -20,6 +22,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
+    "sharp": "^0.34.5",
     "vite": "^5.4.10"
   }
 }

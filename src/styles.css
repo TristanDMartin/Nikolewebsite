@@ -1843,6 +1843,11 @@ main {
   transform: scale(1.04);
 }
 
+.brand-marquee__item[data-brand='colgate'] .brand-marquee__logo {
+  height: 3.35rem;
+  max-width: 13.5rem;
+}
+
 .brand-marquee__fallback {
   font-family: 'Raleway', sans-serif;
   font-size: 0.7rem;
@@ -1867,6 +1872,15 @@ main {
   margin-top: 2.5rem;
   padding-top: 2rem;
   border-top: 2px solid var(--border);
+}
+
+.about-brand-marquee .brand-marquee__track {
+  gap: clamp(1.15rem, 2.2vw, 1.85rem);
+}
+
+.about-brand-marquee .brand-marquee__item {
+  min-width: 4rem;
+  padding-inline: 0.2rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

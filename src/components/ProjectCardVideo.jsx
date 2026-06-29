@@ -16,6 +16,13 @@ function prefersReducedMotion() {
   );
 }
 
+function prefersHoverPlay() {
+  return (
+    typeof window !== 'undefined' &&
+    window.matchMedia('(hover: hover) and (pointer: fine)').matches
+  );
+}
+
 export default function ProjectCardVideo({
   src,
   mp4Src = null,
@@ -23,11 +30,22 @@ export default function ProjectCardVideo({
   bottomScrim = true,
   className = '',
   layout = 'intrinsic',
+  maxHeight = null,
+  poster = null,
+  playOnHover = false,
+  loadMargin = null,
+  forceLoad = false,
 }) {
   const containerRef = useRef(null);
   const videoRef = useRef(null);
-  const [shouldLoad, setShouldLoad] = useState(false);
   const [isInView, setIsInView] = useState(false);
+  const useHoverPlay = playOnHover && prefersHoverPlay();
+  const [isActivated, setIsActivated] = useState(!useHoverPlay);
+  const [hasStarted, setHasStarted] = useState(false);
+  const isVisible = forceLoad || isInView;
+  const shouldLoad = isVisible && isActivated;
+  const intersectionMargin =
+    loadMargin ?? (useHoverPlay ? '80px' : '20% 0px');
 
   const videoSources = useMemo(() => {
     if (sources?.length) {
@@ -49,30 +67,47 @@ export default function ProjectCardVideo({
     }
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setShouldLoad(true);
-          setIsInView(true);
-          return;
-        }
-        setIsInView(false);
+        setIsInView(entry.isIntersecting);
       },
-      { rootMargin: '120px', threshold: 0.12 },
+      { rootMargin: intersectionMargin, threshold: 0.01 },
     );
     observer.observe(container);
     return () => observer.disconnect();
-  }, []);
+  }, [intersectionMargin]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !shouldLoad || prefersReducedMotion()) {
       return;
     }
-    if (isInView) {
+    video.play().catch(() => {});
+    setHasStarted(true);
+  }, [shouldLoad]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !shouldLoad) {
+      return;
+    }
+    if (isVisible && isActivated) {
       video.play().catch(() => {});
       return;
     }
     video.pause();
-  }, [isInView, shouldLoad]);
+  }, [isVisible, isActivated, shouldLoad]);
+
+  const handleActivate = () => {
+    if (useHoverPlay) {
+      setIsActivated(true);
+    }
+  };
+
+  const handleDeactivate = () => {
+    if (useHoverPlay) {
+      setIsActivated(false);
+      setHasStarted(false);
+    }
+  };
 
   const useBottomScrim = layout === 'portrait' ? false : bottomScrim;
   const rootClass = [
@@ -81,33 +116,61 @@ export default function ProjectCardVideo({
     layout === 'portrait' ? 'pcv--portrait' : '',
     layout === 'fill' ? 'pcv--fill' : '',
     useBottomScrim ? 'pcv--bottom-scrim' : '',
+    useHoverPlay ? 'pcv--hover-play' : '',
     className,
   ]
     .filter(Boolean)
     .join(' ');
 
+  const videoStyle = maxHeight
+    ? layout === 'portrait'
+      ? { '--pcv-portrait-height': maxHeight, '--pcv-max-height': maxHeight }
+      : { '--pcv-max-height': maxHeight }
+    : undefined;
+
+  const showPoster = poster && (!shouldLoad || !hasStarted);
+
   return (
-    <div className={rootClass} ref={containerRef}>
-      <video
-        ref={videoRef}
-        key={videoSources.map((item) => item.src).join('|')}
-        className="pcv-video"
-        muted
-        loop
-        playsInline
-        preload={shouldLoad ? 'metadata' : 'none'}
-        aria-hidden="true"
-      >
-        {shouldLoad
-          ? videoSources.map((item) => (
-              <source
-                key={`${item.type}-${item.src}`}
-                src={item.src}
-                type={item.type}
-              />
-            ))
-          : null}
-      </video>
+    <div
+      className={rootClass}
+      ref={containerRef}
+      style={videoStyle}
+      onMouseEnter={useHoverPlay ? handleActivate : undefined}
+      onMouseLeave={useHoverPlay ? handleDeactivate : undefined}
+      onFocusCapture={useHoverPlay ? handleActivate : undefined}
+      onBlurCapture={useHoverPlay ? handleDeactivate : undefined}
+    >
+      {showPoster ? (
+        <img
+          src={encodeMediaSrc(poster)}
+          alt=""
+          className="pcv-poster"
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+        />
+      ) : null}
+      {shouldLoad ? (
+        <video
+          ref={videoRef}
+          key={videoSources.map((item) => item.src).join('|')}
+          className="pcv-video"
+          muted
+          loop
+          playsInline
+          preload="auto"
+          poster={poster ? encodeMediaSrc(poster) : undefined}
+          aria-hidden="true"
+        >
+          {videoSources.map((item) => (
+            <source
+              key={`${item.type}-${item.src}`}
+              src={item.src}
+              type={item.type}
+            />
+          ))}
+        </video>
+      ) : null}
     </div>
   );
 }

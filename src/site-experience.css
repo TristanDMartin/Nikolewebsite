@@ -1,4 +1,8 @@
-/* Shared primitives — landing + portfolio */
+.page-load-fallback {
+  min-height: 100vh;
+  background: var(--surface-hero, #f5f0e8);
+}
+
 
 .site-p1-surface {
   background-color: var(--surface-hero);

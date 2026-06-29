@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { projects } from '../data/projects';
 import { searchProjects } from '../utils/searchProjects';
 import { getProjectThumbnail } from '../utils/projectMedia';
+import { buildPortfolioLinkState } from '../utils/portfolioNavigation';
 import '../project-search.css';
 
 function SearchIcon() {
@@ -27,8 +28,9 @@ function getFirstTag(project) {
   return project.tags.split(' • ')[0].trim();
 }
 
-function ProjectSearchModal({ onClose }) {
+function ProjectSearchModal({ onClose, getPortfolioLinkProps, openPortfolioProject }) {
   const inputRef = useRef(null);
+  const location = useLocation();
   const [query, setQuery] = useState('');
   const results = useMemo(
     () => searchProjects(query, projects),
@@ -50,6 +52,25 @@ function ProjectSearchModal({ onClose }) {
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [onClose]);
+
+  const resolvePortfolioLinkProps = (slug) => {
+    if (openPortfolioProject) {
+      return {
+        to: `/portfolio/${slug}`,
+        onClick: (event) => {
+          onClose();
+          openPortfolioProject(slug, event);
+        },
+      };
+    }
+    if (getPortfolioLinkProps) {
+      return getPortfolioLinkProps(slug);
+    }
+    return {
+      to: `/portfolio/${slug}`,
+      state: buildPortfolioLinkState(`${location.pathname}${location.search}`),
+    };
+  };
 
   return createPortal(
     <div
@@ -94,12 +115,16 @@ function ProjectSearchModal({ onClose }) {
             {results.map((project) => {
               const thumb = getProjectThumbnail(project);
               const firstTag = getFirstTag(project);
+              const linkProps = resolvePortfolioLinkProps(project.slug);
               return (
                 <li key={project.slug} className="project-search-result">
                   <Link
-                    to={`/portfolio/${project.slug}`}
+                    {...linkProps}
                     className="project-search-result-link"
-                    onClick={onClose}
+                    onClick={(event) => {
+                      linkProps.onClick?.(event);
+                      onClose();
+                    }}
                   >
                     {thumb ? (
                       <img
@@ -136,7 +161,11 @@ function ProjectSearchModal({ onClose }) {
   );
 }
 
-export default function ProjectSearchButton({ className = '' }) {
+export default function ProjectSearchButton({
+  className = '',
+  getPortfolioLinkProps,
+  openPortfolioProject,
+}) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -149,7 +178,13 @@ export default function ProjectSearchButton({ className = '' }) {
       >
         <SearchIcon />
       </button>
-      {isOpen ? <ProjectSearchModal onClose={() => setIsOpen(false)} /> : null}
+      {isOpen ? (
+        <ProjectSearchModal
+          onClose={() => setIsOpen(false)}
+          getPortfolioLinkProps={getPortfolioLinkProps}
+          openPortfolioProject={openPortfolioProject}
+        />
+      ) : null}
     </>
   );
 }

@@ -1,8 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { projects } from '../data/projects';
 import ProjectCardVideo from './ProjectCardVideo';
+import PhoneMockupVideo from './PhoneMockupVideo';
+import PortfolioBackLink from './PortfolioBackLink';
+import '../portfolio-experience.css';
 
 import {
   getProjectThumbnail,
@@ -10,6 +13,7 @@ import {
   getGalleryStripItems,
   getAllGalleryItems,
 } from '../utils/projectMedia';
+import { renderHyphenatedText } from '../utils/renderHyphenatedText';
 
 function getProjectImage(proj) {
   return getProjectThumbnail(proj);
@@ -146,6 +150,7 @@ function GalleryLightbox({
 
 export default function PortfolioProjectPage() {
   const { slug } = useParams();
+  const location = useLocation();
   const project = projects.find((item) => item.slug === slug);
   const [selectedImage, setSelectedImage] = useState(null);
   const currentIndex = projects.findIndex((item) => item.slug === slug);
@@ -192,15 +197,15 @@ export default function PortfolioProjectPage() {
     setSelectedImage(index);
   }, []);
 
+  const portfolioNavState = location.state;
+
   if (!project) {
     return (
       <main className="portfolio-case">
         <section className="portfolio-hero portfolio-case-hero">
           <div className="portfolio-hero-content">
+            <PortfolioBackLink fallback="/" label="Back" />
             <h1 className="portfolio-hero-title">Project not found</h1>
-            <Link className="site-cta-btn site-cta-btn--on-dark" to="/?panel=2">
-              Back to portfolio
-            </Link>
           </div>
         </section>
       </main>
@@ -216,6 +221,7 @@ export default function PortfolioProjectPage() {
     <main className="portfolio-case">
       <section className="portfolio-hero portfolio-case-hero">
         <div className="portfolio-hero-content">
+          <PortfolioBackLink fallback="/portfolio" label="Back" />
           <h1 className="portfolio-hero-title">{project.title}</h1>
           {project.tags ? (
             <p className="portfolio-hero-meta">
@@ -231,7 +237,33 @@ export default function PortfolioProjectPage() {
             <p className="site-panel-label">Project overview</p>
           </div>
           <div className="portfolio-case-story">
-            <p className="portfolio-case-lede">{project.description}</p>
+            <p className="portfolio-case-lede">
+              {renderHyphenatedText(project.description)}
+            </p>
+            {project.instagram ? (
+              <a
+                href={project.instagram.href}
+                className="portfolio-case-social-link"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Follow ${project.instagram.handle} on Instagram`}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  aria-hidden="true"
+                >
+                  <rect x="2" y="2" width="20" height="20" rx="5" />
+                  <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" />
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+                </svg>
+                <span>{project.instagram.handle}</span>
+              </a>
+            ) : null}
             {creditItems.length > 0 ? (
               <div className="portfolio-case-credits">
                 <p className="site-panel-label">Credits</p>
@@ -252,17 +284,37 @@ export default function PortfolioProjectPage() {
           aria-label="Project videos"
         >
           <div className="portfolio-grid-container">
-            <div className="portfolio-case-video-gallery">
+            <div
+              className={[
+                'portfolio-case-video-gallery',
+                project.videoGalleryLayout === 'row'
+                  ? 'portfolio-case-video-gallery--row'
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
               {project.galleryVideos.map((item, index) => (
                 <div
                   key={item.src}
                   className="portfolio-case-video-card"
                 >
-                  <ProjectCardVideo
-                    src={item.src}
-                    mp4Src={item.mp4}
-                    bottomScrim={false}
-                  />
+                  {item.mockup ? (
+                    <PhoneMockupVideo
+                      src={item.src}
+                      mp4Src={item.mp4}
+                      frameSrc={item.mockup}
+                      maxHeight={item.maxHeight}
+                    />
+                  ) : (
+                    <ProjectCardVideo
+                      src={item.src}
+                      mp4Src={item.mp4}
+                      bottomScrim={false}
+                      layout={item.layout}
+                      maxHeight={item.maxHeight}
+                    />
+                  )}
                   {item.label ? (
                     <p className="portfolio-case-video-label">
                       {String(index + 1).padStart(2, '0')} · {item.label}
@@ -337,6 +389,7 @@ export default function PortfolioProjectPage() {
                     <Link
                       className="portfolio-item-link"
                       to={`/portfolio/${relatedProject.slug}`}
+                      state={portfolioNavState}
                     >
                       <div className="portfolio-item-image-wrapper">
                         <div
@@ -372,14 +425,17 @@ export default function PortfolioProjectPage() {
           <div className="portfolio-grid-header">
             <p className="site-panel-label">Next steps</p>
           </div>
-          <div className="portfolio-case-nav">
-            <Link className="site-cta-btn" to="/?panel=2">
-              All projects
-            </Link>
+            <div className="portfolio-case-nav">
+            <PortfolioBackLink
+              fallback="/portfolio"
+              className="site-cta-btn"
+              label="Back"
+            />
             {prevProject ? (
               <Link
                 className="site-cta-btn"
                 to={`/portfolio/${prevProject.slug}`}
+                state={portfolioNavState}
               >
                 ← Previous
               </Link>
@@ -392,6 +448,7 @@ export default function PortfolioProjectPage() {
               <Link
                 className="site-cta-btn"
                 to={`/portfolio/${nextProject.slug}`}
+                state={portfolioNavState}
               >
                 Next →
               </Link>

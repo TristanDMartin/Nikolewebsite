@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import ProjectSearchButton from './ProjectSearch';
+import { LANDING_WORK_PANEL_INDEX } from '../config/site';
 import '../app-site-nav.css';
 
 export default function AppSiteNav() {
@@ -15,7 +16,7 @@ export default function AppSiteNav() {
             <Link to="/">Home</Link>
           </li>
           <li>
-            <Link to="/?panel=2">Work</Link>
+            <Link to={`/?panel=${LANDING_WORK_PANEL_INDEX}`}>Work</Link>
           </li>
           <li>
             <Link to="/" title="Homepage (categories is on the home experience)">

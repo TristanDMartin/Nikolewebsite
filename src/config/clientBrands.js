@@ -3,12 +3,12 @@ export const clientBrandAssets = [
   {
     slug: 'clinique',
     displayName: 'Clinique',
-    filename: 'clinique.png',
+    filename: 'clinique.svg',
   },
   {
     slug: 'colgate',
     displayName: 'Colgate',
-    filename: 'colgate.png',
+    filename: 'colgate.svg',
   },
   {
     slug: 'yankee-candle',
@@ -57,6 +57,7 @@ const brandLogoBase = `${
 }images/brands/`;
 
 export const clientBrands = clientBrandAssets.map((asset) => ({
+  slug: asset.slug,
   name: asset.displayName,
   logoSrc: `${brandLogoBase}${asset.filename}`,
 }));

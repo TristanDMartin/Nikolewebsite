@@ -64,7 +64,7 @@
   width: auto;
   max-width: 100%;
   height: auto;
-  max-height: min(72vh, 720px);
+  max-height: var(--pcv-max-height, min(72vh, 720px));
   vertical-align: top;
 }
 
@@ -101,6 +101,29 @@
   background: #000;
   vertical-align: top;
   z-index: 1;
+}
+
+.pcv-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+}
+
+.pcv--intrinsic .pcv-poster {
+  position: relative;
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: var(--pcv-max-height, min(72vh, 720px));
+}
+
+.pcv--hover-play {
+  pointer-events: auto;
 }
 
 .pcv--bottom-scrim::after {

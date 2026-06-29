@@ -22,7 +22,7 @@ function BrandMarqueeItem({ brand }) {
   }
 
   return (
-    <div className="brand-marquee__item">
+    <div className="brand-marquee__item" data-brand={brand.slug}>
       <img
         className="brand-marquee__logo"
         src={brand.logoSrc}

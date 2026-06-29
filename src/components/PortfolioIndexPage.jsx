@@ -1,13 +1,18 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { projects } from '../data/projects';
 import ProjectCardVideo from './ProjectCardVideo';
+import PortfolioBackLink from './PortfolioBackLink';
+import { buildPortfolioLinkState } from '../utils/portfolioNavigation';
+import '../portfolio-experience.css';
 
 import {
   getProjectThumbnail,
   hasCardVideo,
   getCardVideoLayout,
   getCardVideoMp4,
+  getCardVideoPoster,
+  shouldPlayCardVideoOnHover,
   isCardImageIntrinsic,
   getCardImageBackgroundStyle,
 } from '../utils/projectMedia';
@@ -17,10 +22,14 @@ function getProjectImage(project) {
 }
 
 export default function PortfolioIndexPage() {
+  const location = useLocation();
+  const returnTo = `${location.pathname}${location.search}`;
+
   return (
     <main className="portfolio-index">
       <section className="portfolio-hero">
         <div className="portfolio-hero-content">
+          <PortfolioBackLink fallback="/" label="Back" />
           <p className="site-panel-label portfolio-hero-eyebrow">
             02 / Work
           </p>
@@ -61,6 +70,7 @@ export default function PortfolioIndexPage() {
                   <Link
                     className="portfolio-item-link"
                     to={`/portfolio/${project.slug}`}
+                    state={buildPortfolioLinkState(returnTo)}
                   >
                     <div className="portfolio-item-image-wrapper">
                       {showGridVideo ? (
@@ -68,6 +78,8 @@ export default function PortfolioIndexPage() {
                           src={project.cardVideo}
                           mp4Src={getCardVideoMp4(project)}
                           layout={getCardVideoLayout(project)}
+                          poster={getCardVideoPoster(project)}
+                          playOnHover={shouldPlayCardVideoOnHover(project)}
                         />
                       ) : isImageIntrinsic ? (
                         <img

@@ -1,15 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { Link, Route, Routes, useLocation } from 'react-router-dom';
 import AppDocumentMeta from './components/AppDocumentMeta';
 import AppInnerCursor from './components/AppInnerCursor';
 import AppSiteNav from './components/AppSiteNav';
-import LandingHome from './components/LandingHome';
-import './portfolio-experience.css';
-import PortfolioIndexPage from './components/PortfolioIndexPage';
-import PortfolioNavTheme from './components/PortfolioNavTheme';
-import PortfolioProjectPage from './components/PortfolioProjectPage';
 import BrandMarquee from './components/BrandMarquee';
 import aboutHeadshot from './assets/headshot-nikole.jpg';
+
+const LandingHome = lazy(() => import('./components/LandingHome'));
+const PortfolioIndexPage = lazy(() => import('./components/PortfolioIndexPage'));
+const PortfolioProjectPage = lazy(
+  () => import('./components/PortfolioProjectPage'),
+);
+const PortfolioNavTheme = lazy(() => import('./components/PortfolioNavTheme'));
+
+function PageLoadFallback() {
+  return (
+    <div className="page-load-fallback" aria-busy="true" aria-label="Loading" />
+  );
+}
 
 const AboutPage = () => (
   <main>
@@ -315,7 +323,9 @@ const App = () => {
     return (
       <>
         <ScrollToTop />
-        <LandingHome />
+        <Suspense fallback={<PageLoadFallback />}>
+          <LandingHome />
+        </Suspense>
       </>
     );
   }
@@ -327,16 +337,22 @@ const App = () => {
       <ScrollToTop />
       <AppDocumentMeta />
       {isPortfolioExperience ? <AppInnerCursor /> : null}
-      {isPortfolioExperience ? <PortfolioNavTheme /> : null}
+      {isPortfolioExperience ? (
+        <Suspense fallback={null}>
+          <PortfolioNavTheme />
+        </Suspense>
+      ) : null}
       <AppSiteNav />
 
-      <Routes>
-        <Route path="/portfolio" element={<PortfolioIndexPage />} />
-        <Route path="/portfolio/:slug" element={<PortfolioProjectPage />} />
-        <Route path="/inquire" element={<InquirePage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/resume" element={<ResumePage />} />
-      </Routes>
+      <Suspense fallback={<PageLoadFallback />}>
+        <Routes>
+          <Route path="/portfolio" element={<PortfolioIndexPage />} />
+          <Route path="/portfolio/:slug" element={<PortfolioProjectPage />} />
+          <Route path="/inquire" element={<InquirePage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/resume" element={<ResumePage />} />
+        </Routes>
+      </Suspense>
 
     <footer className="site-footer">
       <a

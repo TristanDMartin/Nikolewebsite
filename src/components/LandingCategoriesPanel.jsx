@@ -43,7 +43,13 @@ function CategoryChevron({ isOpen }) {
   );
 }
 
-function CategoryProjectList({ category, isOpen, page, onPageChange }) {
+function CategoryProjectList({
+  category,
+  isOpen,
+  page,
+  onPageChange,
+  getPortfolioLinkProps,
+}) {
   const items = useMemo(() => getCategoryItems(category), [category]);
   const totalPages = Math.max(1, Math.ceil(items.length / PROJECTS_PER_PAGE));
   const safePage = Math.min(page, totalPages - 1);
@@ -59,7 +65,7 @@ function CategoryProjectList({ category, isOpen, page, onPageChange }) {
             return (
               <li key={item.key}>
                 <Link
-                  to={`/portfolio/${item.project.slug}`}
+                  {...getPortfolioLinkProps(item.project.slug)}
                   className="p4-project-link"
                   tabIndex={isOpen ? undefined : -1}
                 >
@@ -118,7 +124,10 @@ function CategoryProjectList({ category, isOpen, page, onPageChange }) {
   );
 }
 
-export default function LandingCategoriesPanel({ resetKey = 0 }) {
+export default function LandingCategoriesPanel({
+  resetKey = 0,
+  getPortfolioLinkProps,
+}) {
   const categories = useMemo(() => getProjectsByCategory(), []);
   const projectTotal = projects.length;
   const scrollRef = useRef(null);
@@ -202,6 +211,7 @@ export default function LandingCategoriesPanel({ resetKey = 0 }) {
                       isOpen={isOpen}
                       page={categoryPage}
                       onPageChange={(page) => setCategoryPage(category.id, page)}
+                      getPortfolioLinkProps={getPortfolioLinkProps}
                     />
                   </div>
                 </div>

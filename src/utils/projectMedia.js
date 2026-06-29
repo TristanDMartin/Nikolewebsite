@@ -5,6 +5,10 @@ export function getGallerySrc(item) {
   return typeof item === 'string' ? item : item.src;
 }
 
+function toCssUrl(imageUrl) {
+  return `url("${encodeURI(imageUrl)}")`;
+}
+
 export function normalizeGalleryItem(item) {
   if (typeof item === 'string') {
     return { src: item };
@@ -34,6 +38,26 @@ export function hasCardVideo(project) {
 
 export function getCardVideoMp4(project) {
   return project?.cardVideoMp4 || null;
+}
+
+export function getCardVideoPoster(project) {
+  if (project?.cardVideoPoster) {
+    return project.cardVideoPoster;
+  }
+  if (project?.cardVideoPoster === null || project?.cardVideoAutoplay) {
+    return null;
+  }
+  if (project?.cardVideo && shouldPlayCardVideoOnHover(project)) {
+    return getProjectThumbnail(project) || null;
+  }
+  if (project?.cardVideo) {
+    return null;
+  }
+  return getProjectThumbnail(project) || null;
+}
+
+export function shouldPlayCardVideoOnHover(project) {
+  return hasCardVideo(project) && !project?.cardVideoAutoplay;
 }
 
 export function getVideoSources(primarySrc, mp4Src) {
@@ -93,7 +117,7 @@ export function getCardImageBackgroundStyle(imageUrl, fit) {
   }
   if (fit === 'contain') {
     return {
-      backgroundImage: `url(${imageUrl})`,
+      backgroundImage: toCssUrl(imageUrl),
       backgroundSize: 'contain',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
@@ -101,7 +125,7 @@ export function getCardImageBackgroundStyle(imageUrl, fit) {
     };
   }
   return {
-    backgroundImage: `url(${imageUrl})`,
+    backgroundImage: toCssUrl(imageUrl),
   };
 }
 
@@ -113,7 +137,7 @@ export function getWorkGridImageStyle(imageUrl, fit) {
     return getCardImageBackgroundStyle(imageUrl, 'contain');
   }
   return {
-    backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.5)), url(${imageUrl})`,
+    backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.5)), ${toCssUrl(imageUrl)}`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
   };

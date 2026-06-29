@@ -10,3 +10,6 @@ export const DEFAULT_DESCRIPTION =
   'New York–based Creative Director & Design Strategist: brand identity, packaging, campaigns, and omni-channel creative for brands including Colgate, Yankee Candle, Sharpie, Graco, and Clinique.';
 
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/images/colgate-collab-explore/thumbnail.png`;
+
+/** First horizontal panel on the homepage work experience (featured work / p2). */
+export const LANDING_WORK_PANEL_INDEX = 1;

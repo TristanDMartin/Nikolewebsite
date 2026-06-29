@@ -1,16 +1,32 @@
 import React, {
+  Suspense,
+  lazy,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useNavigationType,
+} from 'react-router-dom';
+import {
+  buildPortfolioLinkState,
+  consumeLandingReturn,
+  getLandingReturnFromLocation,
+  peekLandingReturn,
+  saveLandingReturn,
+} from '../utils/portfolioNavigation';
 import aboutHeadshot from '../assets/headshot-nikole.jpg';
 import { projects } from '../data/projects';
 import {
   DEFAULT_DESCRIPTION,
   DEFAULT_OG_IMAGE,
+  LANDING_WORK_PANEL_INDEX,
   SITE_NAME,
   SITE_URL,
 } from '../config/site';
@@ -20,12 +36,13 @@ import LandingCategoriesPanel from './LandingCategoriesPanel';
 import InstagramFeed from './InstagramFeed';
 import ProjectCardVideo from './ProjectCardVideo';
 import ProjectSearchButton from './ProjectSearch';
-import HeroScrollImage from './HeroScrollImage';
+const HeroScrollImage = lazy(() => import('./HeroScrollImage'));
 import {
   getProjectThumbnail,
   hasCardVideo,
   getCardVideoLayout,
   getCardVideoMp4,
+  getCardVideoPoster,
   isCardImageIntrinsic,
   getWorkGridImageStyle,
   getFeaturedProjects,
@@ -34,7 +51,6 @@ import '../landing.css';
 
 const PANEL_COUNT = 6;
 const CATEGORIES_PANEL_INDEX = 3;
-const FIRST_WORK_PANEL_INDEX = 1;
 const LANDING_SPLASH_SEEN_KEY = 'nikole-landing-splash-seen';
 const WORK_PAGE_SIZE = 5;
 const ABOUT_SCROLL_UNITS = 1.8;
@@ -223,6 +239,19 @@ function getFirstTag(project) {
   return project.tags.split(' • ')[0].trim();
 }
 
+const WORK_SHOWCASE_TITLE_ONLY_SLUGS = new Set([
+  'clinique-uv-solutions',
+  'clinique-chubby-franchise',
+  'bumble-and-bumble-holiday-2024',
+]);
+
+function getWorkShowcaseLabel(project) {
+  if (WORK_SHOWCASE_TITLE_ONLY_SLUGS.has(project.slug)) {
+    return project.title;
+  }
+  return getFirstTag(project);
+}
+
 const HOMEPAGE_RECENT_SLUGS = [
   'bumble-and-bumble-holiday-2023',
   'bumble-and-bumble-holiday-2022',
@@ -240,15 +269,14 @@ const ABOUT_BODY =
   'As a design leader, I transform global brand visions into commercial packaging realities. With 13+ years of experience leading multi-disciplinary teams for Fortune 500 brands, I bridge the gap between creative excellence and scalable business innovation.';
 
 const ABOUT_ME_PARAGRAPHS = [
-  'I am a Creative Leader driven by the intersection of strategic brand thinking, innovative packaging architecture, and omnichannel storytelling.',
   'With a career defined by global brand launches and large-scale visual transformations, I specialize in bridging the gap between high-level brand strategy and on-shelf execution. My leadership philosophy is rooted in the belief that the best design solutions are born from cross-functional collaboration. Whether I am navigating complex manufacturing requirements for a global launch or directing a fast-paced digital campaign, I thrive on translating business challenges into compelling, human-centric design experiences.',
   'My experience spans the full brand lifecycle from conceptualizing innovative "white space" opportunities to leading global production across legacy brands like Clinique, Colgate, Yankee Candle, and Sharpie. I am energized by the challenge of evolving a brand\'s visual identity to remain relevant to contemporary consumers while maintaining the rigorous quality standards required for global retail success.',
-  'Beyond the Studio: My creative curiosity is constant. You\'ll often find me exploring the intersection of art and sneaker culture through my passion project, @Nikoles_Soles, where I experiment with illustration, motion design, and digital storytelling. Outside of work, I am an avid traveler and student of global aesthetics, often influenced by the textures found in international cinema and design. My world recently expanded in a new way as I stepped into the role of a parent this year. At home, I am happily overseen by my two feline coworkers, Bigby and Bailey, and my newest little creative inspiration.',
 ];
 
 export default function LandingHome() {
   const navigate = useNavigate();
   const location = useLocation();
+  const navigationType = useNavigationType();
   const landingPageRef = useRef(null);
   const trackRef = useRef(null);
   const progressRef = useRef(null);
@@ -268,6 +296,7 @@ export default function LandingHome() {
     pam: null,
     lastPanelIdx: -1,
   });
+  const pendingLandingRestoreRef = useRef(null);
 
   const aboutMeHeroImage = aboutHeadshot;
   const featuredProjects = useMemo(() => getFeaturedProjects(projects), []);
@@ -286,6 +315,8 @@ export default function LandingHome() {
   });
   const splashTimerRef = useRef(null);
   const p1PanelRef = useRef(null);
+  const p3PanelRef = useRef(null);
+  const [isRecentWorkVisible, setIsRecentWorkVisible] = useState(false);
   const [isLandingMobile, setIsLandingMobile] = useState(() =>
     typeof window !== 'undefined' ? isLandingMobileViewport() : false,
   );
@@ -525,34 +556,182 @@ export default function LandingHome() {
     goToPanel(CATEGORIES_PANEL_INDEX);
   }, [goToPanel]);
 
+  const getLandingPanelIndex = useCallback(() => {
+    const track = trackRef.current;
+    if (!track) {
+      return scrollUiCacheRef.current.lastPanelIdx >= 0
+        ? scrollUiCacheRef.current.lastPanelIdx
+        : 0;
+    }
+    if (isLandingMobileViewport()) {
+      return getMobileActivePanelIndex(track);
+    }
+    return (
+      getViewportPanelIndex(currentXRef.current, track) ??
+      (scrollUiCacheRef.current.lastPanelIdx >= 0
+        ? scrollUiCacheRef.current.lastPanelIdx
+        : 0)
+    );
+  }, []);
+
+  const getLandingReturnSnapshot = useCallback(() => {
+    const track = trackRef.current;
+    if (isLandingMobileViewport() && track) {
+      const panelIndex = getMobileActivePanelIndex(track);
+      return { panelIndex, scrollX: window.scrollY };
+    }
+    const panelIndex = getLandingPanelIndex();
+    return {
+      panelIndex,
+      scrollX: currentXRef.current,
+    };
+  }, [getLandingPanelIndex]);
+
+  const openPortfolioProject = useCallback(
+    (slug, event) => {
+      if (
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey ||
+        event.button !== 0
+      ) {
+        return;
+      }
+      event.preventDefault();
+      const landingReturn = getLandingReturnSnapshot();
+      saveLandingReturn(landingReturn);
+      navigate(`${location.pathname}${location.search}`, {
+        replace: true,
+        state: {
+          landingPanel: landingReturn.panelIndex,
+          landingScrollX: landingReturn.scrollX,
+        },
+      });
+      navigate(`/portfolio/${slug}`, {
+        state: buildPortfolioLinkState('/', {
+          landingPanel: landingReturn.panelIndex,
+          landingScrollX: landingReturn.scrollX,
+        }),
+      });
+    },
+    [getLandingReturnSnapshot, location.pathname, location.search, navigate],
+  );
+
+  const getPortfolioLinkProps = useCallback(
+    (slug) => ({
+      to: `/portfolio/${slug}`,
+      onClick: (event) => openPortfolioProject(slug, event),
+    }),
+    [openPortfolioProject],
+  );
+
+  const applyLandingRestore = useCallback(
+    (restoreTarget) => {
+      if (!restoreTarget) {
+        return undefined;
+      }
+      const { panelIndex, scrollX } = restoreTarget;
+      if (!Number.isFinite(panelIndex) || panelIndex < 0 || panelIndex >= PANEL_COUNT) {
+        return undefined;
+      }
+      pendingLandingRestoreRef.current = restoreTarget;
+      dismissSplash();
+      let rafId = 0;
+      let attempts = 0;
+      const finishRestore = () => {
+        consumeLandingReturn();
+        pendingLandingRestoreRef.current = null;
+      };
+      const tryApply = () => {
+        if (attempts >= 12) {
+          finishRestore();
+          return;
+        }
+        attempts += 1;
+        const track = trackRef.current;
+        if (!track) {
+          rafId = window.requestAnimationFrame(tryApply);
+          return;
+        }
+        if (isLandingMobileViewport()) {
+          const panels = track.querySelectorAll(':scope > .panel');
+          const panel = panels[panelIndex];
+          if (panel) {
+            panel.scrollIntoView({ behavior: 'auto', block: 'start' });
+          }
+          scrollUiCacheRef.current.lastPanelIdx = panelIndex;
+          applyPanelChrome(panelIndex, window.scrollY > 64);
+          finishRestore();
+          return;
+        }
+        const panelScrollX = getScrollXForPanelIndex(track, panelIndex);
+        const resolvedScrollX =
+          Number.isFinite(scrollX) && scrollX > 0 ? scrollX : panelScrollX;
+        if (panelIndex > 0 && resolvedScrollX <= 0 && track.offsetWidth > 0) {
+          rafId = window.requestAnimationFrame(tryApply);
+          return;
+        }
+        setScrollImmediate(resolvedScrollX);
+        scrollUiCacheRef.current.lastPanelIdx = panelIndex;
+        applyPanelChrome(panelIndex, resolvedScrollX > 50);
+        finishRestore();
+      };
+      rafId = window.requestAnimationFrame(tryApply);
+      return () => {
+        window.cancelAnimationFrame(rafId);
+      };
+    },
+    [applyPanelChrome, dismissSplash, setScrollImmediate],
+  );
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const raw = params.get('panel');
-    if (raw === null) {
-      return undefined;
-    }
-    const idx = Number.parseInt(raw, 10);
-    if (!Number.isFinite(idx) || idx < 0 || idx >= PANEL_COUNT) {
-      return undefined;
-    }
-    dismissSplash();
-    let rafOuter = 0;
-    let rafInner = 0;
-    rafOuter = window.requestAnimationFrame(() => {
-      rafInner = window.requestAnimationFrame(() => {
-        goToPanel(idx);
-        navigate('/', { replace: true });
+    if (raw !== null) {
+      const idx = Number.parseInt(raw, 10);
+      if (!Number.isFinite(idx) || idx < 0 || idx >= PANEL_COUNT) {
+        return undefined;
+      }
+      const cleanup = applyLandingRestore({ panelIndex: idx, scrollX: null });
+      navigate('/', {
+        replace: true,
+        state: { landingPanel: idx, landingScrollX: null },
       });
-    });
-    return () => {
-      window.cancelAnimationFrame(rafOuter);
-      window.cancelAnimationFrame(rafInner);
-    };
+      return cleanup;
+    }
+    return undefined;
+  }, [location.search, applyLandingRestore, navigate]);
+
+  useLayoutEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('panel') !== null) {
+      return undefined;
+    }
+
+    const locationReturn = getLandingReturnFromLocation(location);
+    let restoreTarget = null;
+
+    if (locationReturn.panelIndex !== null) {
+      restoreTarget = {
+        panelIndex: locationReturn.panelIndex,
+        scrollX: locationReturn.scrollX,
+      };
+    } else if (navigationType === 'POP') {
+      restoreTarget = peekLandingReturn();
+    }
+
+    if (!restoreTarget) {
+      return undefined;
+    }
+
+    return applyLandingRestore(restoreTarget);
   }, [
+    location.key,
     location.search,
-    goToPanel,
-    dismissSplash,
-    navigate,
+    location.state,
+    navigationType,
+    applyLandingRestore,
   ]);
 
   useEffect(() => {
@@ -580,7 +759,19 @@ export default function LandingHome() {
         }
         updateMobileUi();
       } else if (trackRef.current) {
-        setScrollImmediate(currentXRef.current);
+        const pendingRestore = pendingLandingRestoreRef.current;
+        if (pendingRestore) {
+          const resolvedScrollX =
+            Number.isFinite(pendingRestore.scrollX) && pendingRestore.scrollX > 0
+              ? pendingRestore.scrollX
+              : getScrollXForPanelIndex(
+                  trackRef.current,
+                  pendingRestore.panelIndex,
+                );
+          setScrollImmediate(resolvedScrollX);
+        } else {
+          setScrollImmediate(currentXRef.current);
+        }
       }
     };
     syncLayoutMode();
@@ -668,6 +859,21 @@ export default function LandingHome() {
       });
     };
   }, [isInstagramOpen]);
+
+  useEffect(() => {
+    const panel = p3PanelRef.current;
+    if (!panel) {
+      return undefined;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsRecentWorkVisible(entry.isIntersecting);
+      },
+      { rootMargin: '12% 0px', threshold: 0.2 },
+    );
+    observer.observe(panel);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!isInstagramOpen) {
@@ -903,7 +1109,7 @@ export default function LandingHome() {
             </button>
           </li>
           <li>
-            <button type="button" onClick={() => goToPanel(2)}>
+            <button type="button" onClick={() => goToPanel(LANDING_WORK_PANEL_INDEX)}>
               Work
             </button>
           </li>
@@ -923,7 +1129,10 @@ export default function LandingHome() {
             </button>
           </li>
           <li>
-            <ProjectSearchButton />
+            <ProjectSearchButton
+              getPortfolioLinkProps={getPortfolioLinkProps}
+              openPortfolioProject={openPortfolioProject}
+            />
           </li>
         </ul>
       </nav>
@@ -983,7 +1192,7 @@ export default function LandingHome() {
                 className="p1-cta-btn"
                 onClick={() => {
                   dismissSplash();
-                  goToPanel(FIRST_WORK_PANEL_INDEX);
+                  goToPanel(LANDING_WORK_PANEL_INDEX);
                 }}
               >
                 View selected work
@@ -996,11 +1205,13 @@ export default function LandingHome() {
                 </svg>
               </button>
             </div>
-            <HeroScrollImage
-              isMobile={isLandingMobile}
-              desktopScrollRef={currentXRef}
-              scrollTargetRef={p1PanelRef}
-            />
+            <Suspense fallback={null}>
+              <HeroScrollImage
+                isMobile={isLandingMobile}
+                desktopScrollRef={currentXRef}
+                scrollTargetRef={p1PanelRef}
+              />
+            </Suspense>
             <div className="p1-year" aria-hidden="true">
               NG — 2026
             </div>
@@ -1010,12 +1221,14 @@ export default function LandingHome() {
             <div className="p2-flow">
               <div className="p2-canvas">
                 <div className="p2-editorial-block">
-                  <h2 className="p2-headline">
-                    Design that lives
-                    <br />
-                    <em>on shelf &amp; screen</em>
-                  </h2>
-                  <p className="p2-body-col">{ABOUT_BODY}</p>
+                  <div className="p2-copy-stack">
+                    <h2 className="p2-headline">
+                      Design that lives
+                      <br />
+                      <em>on shelf &amp; screen</em>
+                    </h2>
+                    <p className="p2-body">{ABOUT_BODY}</p>
+                  </div>
                   <div className="p2-stats">
                     <div className="stat">
                       <div className="stat-num">15+</div>
@@ -1043,7 +1256,7 @@ export default function LandingHome() {
                       return (
                         <Link
                           key={project.slug}
-                          to={`/portfolio/${project.slug}`}
+                          {...getPortfolioLinkProps(project.slug)}
                           className={`p2-card p2-card-${index + 1}`}
                           role="listitem"
                         >
@@ -1062,13 +1275,16 @@ export default function LandingHome() {
                                 src={project.cardVideo}
                                 mp4Src={getCardVideoMp4(project)}
                                 layout={getCardVideoLayout(project)}
+                                poster={getCardVideoPoster(project)}
                               />
                             ) : null}
                           </div>
                           <span className="p2-card-label">
-                            {getFirstTag(project)}
+                            {getWorkShowcaseLabel(project)}
                           </span>
-                          <span className="p2-card-title">{project.title}</span>
+                          {WORK_SHOWCASE_TITLE_ONLY_SLUGS.has(project.slug) ? null : (
+                            <span className="p2-card-title">{project.title}</span>
+                          )}
                         </Link>
                       );
                     })}
@@ -1078,7 +1294,11 @@ export default function LandingHome() {
             </div>
           </section>
 
-          <section className="panel p3" aria-label="Selected work">
+          <section
+            ref={p3PanelRef}
+            className="panel p3"
+            aria-label="Selected work"
+          >
             <div className="p3-content">
               <div className="p3-header">
                 <div>
@@ -1141,7 +1361,7 @@ export default function LandingHome() {
                   return (
                     <Link
                       key={project.slug}
-                      to={`/portfolio/${project.slug}`}
+                      {...getPortfolioLinkProps(project.slug)}
                       className={`wc${isImageIntrinsic ? ' wc--image-intrinsic' : ''}`}
                     >
                       <div
@@ -1159,6 +1379,9 @@ export default function LandingHome() {
                             src={project.cardVideo}
                             mp4Src={getCardVideoMp4(project)}
                             layout="fill"
+                            poster={null}
+                            playOnHover={false}
+                            forceLoad={isRecentWorkVisible}
                           />
                         ) : isImageIntrinsic ? (
                           <img
@@ -1180,23 +1403,52 @@ export default function LandingHome() {
             </div>
           </section>
 
-          <LandingCategoriesPanel resetKey={categoriesResetKey} />
+          <LandingCategoriesPanel
+            resetKey={categoriesResetKey}
+            getPortfolioLinkProps={getPortfolioLinkProps}
+          />
 
           <section className="panel pam" aria-label="About me">
             <div className="pam-grid-lines" aria-hidden="true" />
             <div className="pam-inner">
               <div className="pam-main">
                 <h2 className="pam-headline">
-                  The craft
-                  <br />
-                  is in the <em>collaboration</em>
+                  Hi, I&apos;m <em>Nikole</em>
                 </h2>
                 <div className="pam-copy">
+                  <p className="pam-para pam-para-accent">
+                    I am a Creative Leader driven by the intersection of
+                    strategic brand thinking, innovative packaging architecture,
+                    and omnichannel storytelling.
+                  </p>
                   {ABOUT_ME_PARAGRAPHS.map((paragraph, index) => (
                     <p key={index} className="pam-para">
                       {paragraph}
                     </p>
                   ))}
+                  <p className="pam-para">
+                    <span className="pam-para-accent">Beyond the Studio:</span>{' '}
+                    My creative curiosity is
+                    constant. You&apos;ll often find me exploring the
+                    intersection of art and sneaker culture through my passion
+                    project,{' '}
+                    <a
+                      href="https://www.instagram.com/nikoles_soles/?hl=en"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="pam-para-link"
+                    >
+                      @Nikoles_Soles
+                    </a>
+                    , where I experiment with illustration, motion design, and
+                    digital storytelling. Outside of work, I am an avid traveler
+                    and student of global aesthetics, often influenced by the
+                    textures found in international cinema and design. My world
+                    recently expanded in a new way as I stepped into the role of
+                    a parent this year. At home, I am happily overseen by my
+                    two feline coworkers, Bigby and Bailey, and my newest
+                    little creative inspiration.
+                  </p>
                 </div>
                 <BrandMarquee className="pam-brand-marquee" label="Client brands" />
                 <div className="pam-footer">
@@ -1260,7 +1512,7 @@ export default function LandingHome() {
               <h2 className="p6-headline">
                 Ready to
                 <br />
-                <em>Think outside of the box?</em>
+                <em>Connect?</em>
               </h2>
               <p className="p6-tagline">
                 If you&apos;re building something ambitious and need the right
@@ -1286,23 +1538,51 @@ export default function LandingHome() {
                   </svg>
                   Instagram
                 </a>
-                <Link to="/portfolio" className="social-link">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
-                    <path d="M12 19l-7-7 7-7M19 12H5" />
-                  </svg>
-                  Full portfolio
-                </Link>
-                <button
-                  type="button"
+                <a
+                  href="https://www.linkedin.com/in/nikole-glenn/"
                   className="social-link"
-                  onClick={() => goToPanel(4)}
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
-                    <circle cx="12" cy="8" r="4" />
-                    <path d="M6 20v-1a6 6 0 0112 0v1" />
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-13h4" />
+                    <rect x="2" y="9" width="4" height="12" />
+                    <circle cx="4" cy="4" r="2" />
                   </svg>
-                  About
-                </button>
+                  LinkedIn
+                </a>
+                <a
+                  href="https://www.pinterest.com/nikoleglenn/"
+                  className="social-link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 6c-2.2 0-3.5 1.6-3.5 3.5 0 1.4.8 2.2 1.8 2.2.5 0 .9-.3.9-.7 0-.4-.2-.6-.2-1 .1-.9.6-1.8 1.9-1.8 1.1 0 1.9.8 1.9 2.1 0 1.6-1 2.9-2.4 2.9-.7 0-1.2-.4-1.2-.9 0-.3.2-.6.2-.9 0-.2-.1-.4-.3-.4-.3 0-.5.2-.5.5 0 .2.1.5.1.5l-.7 2.6" />
+                  </svg>
+                  Pinterest
+                </a>
               </div>
             </div>
           </section>
