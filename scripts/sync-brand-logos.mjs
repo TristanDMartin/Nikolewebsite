@@ -1,39 +1,30 @@
 /**
- * Downloads client brand logos into public/images/brands/.
- * Sources: Wikimedia Commons (see file URLs in clientBrands.js).
+ * Verifies client brand logo files exist in public/images/brands/.
+ * Logos are maintained locally — see src/config/clientBrands.js.
  * Run: node scripts/sync-brand-logos.mjs
  */
-import { mkdir, writeFile } from 'fs/promises';
-import { dirname, join } from 'path';
+import { access } from 'fs/promises';
+import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { clientBrandAssets } from '../src/config/clientBrands.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = join(root, 'public/images/brands');
 
-const WIKIMEDIA_USER_AGENT =
-  'NikoleGlennPortfolio/1.0 (portfolio site; contact: nikole@nikoleglenn.com)';
-
-async function downloadAsset(asset) {
-  const response = await fetch(asset.sourceUrl, {
-    headers: { 'User-Agent': WIKIMEDIA_USER_AGENT },
-  });
-  if (!response.ok) {
-    throw new Error(`${asset.slug}: HTTP ${response.status}`);
-  }
-  const buffer = Buffer.from(await response.arrayBuffer());
-  const dest = join(outDir, asset.filename);
-  await writeFile(dest, buffer);
-  console.log(`Saved ${asset.filename}`);
-}
-
-await mkdir(outDir, { recursive: true });
+let missing = 0;
 for (const asset of clientBrandAssets) {
-  if (!asset.sourceUrl) {
-    console.log(`Skip ${asset.filename} (local asset)`);
-    continue;
+  const dest = join(outDir, asset.filename);
+  try {
+    await access(dest);
+    console.log(`OK ${asset.filename}`);
+  } catch {
+    console.error(`Missing ${asset.filename}`);
+    missing += 1;
   }
-  await downloadAsset(asset);
-  await new Promise((resolve) => setTimeout(resolve, 1200));
 }
-console.log('Done.');
+
+if (missing > 0) {
+  process.exit(1);
+}
+
+console.log('All brand logos present.');

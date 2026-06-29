@@ -1,5 +1,6 @@
 /* Pantone-inspired brand palette — web hex approximations for TSX / TPG / TPM / C */
 :root {
+  --font-sans: 'Raleway', sans-serif;
   /* Sun Glare — 13-0663 TSX */
   --pantone-sun-glare: #ddf700;
   /* Exuberant Orange — 17-1363 TSX */
@@ -20,4 +21,9 @@
   --warm-white: #f7f4ef;
   --pale: #e6e2da;
   --text: var(--ink);
+
+  /* Homepage P1 hero surface — shared with portfolio pages */
+  --surface-hero: #ffffff;
+  --surface-hero-grid: rgba(22, 22, 22, 0.07);
+  --surface-hero-grid-size: 80px;
 }

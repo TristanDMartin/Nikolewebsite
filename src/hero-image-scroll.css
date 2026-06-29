@@ -13,40 +13,31 @@
   display: block;
   width: min(30vw, 440px);
   height: auto;
-  max-height: 58vh;
   background: transparent;
   border: none;
   box-shadow: none;
   outline: none;
   vertical-align: top;
+  object-fit: contain;
+  object-position: center center;
 }
 
 @media (max-width: 960px) {
-  .hero-scroll-image-frame {
-    right: 1.25rem;
-    top: 5.5rem;
-  }
-
   .hero-scroll-image {
-    width: min(38vw, 260px);
-    max-height: 46vh;
+    width: min(38vw, 280px);
   }
 }
 
 @media (max-width: 640px) {
-  .hero-scroll-image-frame {
-    right: 1rem;
-    top: 5rem;
-  }
-
   .hero-scroll-image {
-    width: min(42vw, 220px);
-    max-height: 40vh;
+    width: min(42vw, 240px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-scroll-image {
+  .hero-scroll-image-frame {
     transform: none !important;
+    top: 7rem !important;
+    right: 2.5rem !important;
   }
 }

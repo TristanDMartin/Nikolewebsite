@@ -5,16 +5,15 @@ export default function PortfolioNavTheme() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    const isPortfolioIndex = pathname === '/portfolio';
-    const isCaseStudy = pathname.startsWith('/portfolio/');
-    if (!isPortfolioIndex && !isCaseStudy) {
+    const isCaseStudy =
+      pathname.startsWith('/portfolio/') && pathname !== '/portfolio';
+    if (!isCaseStudy) {
       document.body.classList.remove('portfolio-nav-light');
       return undefined;
     }
-    const hero = document.querySelector(
-      '.portfolio-hero, .portfolio-case-hero',
-    );
+    const hero = document.querySelector('.portfolio-case-hero--has-media');
     if (!hero) {
+      document.body.classList.remove('portfolio-nav-light');
       return undefined;
     }
     const observer = new IntersectionObserver(

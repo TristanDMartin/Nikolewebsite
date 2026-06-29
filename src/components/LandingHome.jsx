@@ -19,16 +19,65 @@ import BrandMarquee from './BrandMarquee';
 import LandingCategoriesPanel from './LandingCategoriesPanel';
 import InstagramFeed from './InstagramFeed';
 import ProjectCardVideo from './ProjectCardVideo';
+import ProjectSearchButton from './ProjectSearch';
 import HeroScrollImage from './HeroScrollImage';
+import {
+  getProjectThumbnail,
+  hasCardVideo,
+  getCardVideoLayout,
+  getCardVideoMp4,
+  isCardImageIntrinsic,
+  getWorkGridImageStyle,
+  getFeaturedProjects,
+} from '../utils/projectMedia';
 import '../landing.css';
 
-const PANEL_COUNT = 7;
+const PANEL_COUNT = 6;
+const CATEGORIES_PANEL_INDEX = 3;
+const FIRST_WORK_PANEL_INDEX = 1;
+const LANDING_SPLASH_SEEN_KEY = 'nikole-landing-splash-seen';
 const WORK_PAGE_SIZE = 5;
 const ABOUT_SCROLL_UNITS = 1.8;
 const LANDING_MOBILE_BREAKPOINT = 960;
+const P1_HERO_SCROLL_FRACTION = 0.5;
+const SCROLL_EASE = 0.22;
+const SCROLL_EASE_FAST = 0.32;
+
+function shouldShowLandingSplash() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return false;
+  }
+  try {
+    return sessionStorage.getItem(LANDING_SPLASH_SEEN_KEY) !== '1';
+  } catch {
+    return true;
+  }
+}
+
+function markLandingSplashSeen() {
+  try {
+    sessionStorage.setItem(LANDING_SPLASH_SEEN_KEY, '1');
+  } catch {
+    // sessionStorage unavailable
+  }
+}
 
 function isLandingMobileViewport() {
   return window.innerWidth <= LANDING_MOBILE_BREAKPOINT;
+}
+
+function applyP1CopyFade(p1El, progress) {
+  if (!p1El) {
+    return;
+  }
+  const copyFade = 1 - Math.max(0, Math.min(1, (progress - 0.06) / 0.24));
+  p1El.style.setProperty('--p1-copy-opacity', copyFade.toFixed(4));
+  p1El.style.setProperty('--p1-copy-blur', '0px');
+  p1El.style.setProperty('--p1-copy-shift', `${(-progress * 48).toFixed(2)}px`);
+  p1El.classList.toggle('p1-copy-hidden', copyFade <= 0.02);
 }
 
 function getMobileActivePanelIndex(trackEl) {
@@ -82,18 +131,36 @@ function canConsumeVerticalScroll(el, deltaY) {
   return el.scrollTop > 0;
 }
 
-function getPanelOffsets() {
+function isCategoriesVerticalScrollAllowed(scrollable, scrollX, trackEl) {
+  if (!scrollable?.classList.contains('p4-categories-scroll')) {
+    return true;
+  }
+  if (!trackEl) {
+    return false;
+  }
+  return getViewportPanelIndex(scrollX, trackEl) === CATEGORIES_PANEL_INDEX;
+}
+
+function getPanelOffsets(trackEl) {
   if (window.innerWidth <= LANDING_MOBILE_BREAKPOINT) {
     return Array.from({ length: PANEL_COUNT }, (_, i) => i);
+  }
+  const vw = window.innerWidth;
+  let aboutUnits = ABOUT_SCROLL_UNITS;
+  if (trackEl) {
+    const panels = trackEl.querySelectorAll(':scope > .panel');
+    const aboutPanel = panels[1];
+    if (aboutPanel && vw > 0) {
+      aboutUnits = aboutPanel.offsetWidth / vw;
+    }
   }
   return [
     0,
     1,
-    1 + ABOUT_SCROLL_UNITS,
-    2 + ABOUT_SCROLL_UNITS,
-    3 + ABOUT_SCROLL_UNITS,
-    4 + ABOUT_SCROLL_UNITS,
-    5 + ABOUT_SCROLL_UNITS,
+    1 + aboutUnits,
+    2 + aboutUnits,
+    3 + aboutUnits,
+    4 + aboutUnits,
   ];
 }
 
@@ -143,18 +210,10 @@ function getViewportPanelIndex(x, trackEl) {
   return panels.length - 1;
 }
 
-const SHAPE_CLASSES = [
-  'shape-tall-bottle',
-  'shape-ritual-box',
-  'shape-crystal',
-  'shape-sleeve',
-  'shape-canister',
-];
-
 const WC_GRADIENTS = ['wc-1', 'wc-2', 'wc-3', 'wc-4', 'wc-5'];
 
 function getProjectImage(project) {
-  return project.image || (project.gallery && project.gallery[0]) || null;
+  return getProjectThumbnail(project);
 }
 
 function getFirstTag(project) {
@@ -164,55 +223,28 @@ function getFirstTag(project) {
   return project.tags.split(' • ')[0].trim();
 }
 
-function buildOrderedWorkProjects() {
-  const featured = [...projects]
-    .filter((p) => p.isFeatured)
-    .sort((a, b) => (a.featuredRank || 0) - (b.featuredRank || 0));
-  const rest = projects.filter((p) => !featured.includes(p));
-  return [...featured, ...rest];
+const HOMEPAGE_RECENT_SLUGS = [
+  'bumble-and-bumble-holiday-2023',
+  'bumble-and-bumble-holiday-2022',
+  'hum-by-colgate',
+  'colgate-magik',
+  'colgate-collab-explore',
+];
+
+function resolveProjectsBySlugs(slugs) {
+  const bySlug = new Map(projects.map((p) => [p.slug, p]));
+  return slugs.map((slug) => bySlug.get(slug)).filter(Boolean);
 }
 
-function buildShowcaseProjects() {
-  const featured = [...projects]
-    .filter((p) => p.isFeatured)
-    .sort((a, b) => (a.featuredRank || 0) - (b.featuredRank || 0));
-  const rest = projects.filter((p) => !featured.includes(p));
-  return [...featured, ...rest].slice(0, 14);
-}
+const ABOUT_BODY =
+  'As a design leader, I transform global brand visions into commercial packaging realities. With 13+ years of experience leading multi-disciplinary teams for Fortune 500 brands, I bridge the gap between creative excellence and scalable business innovation.';
 
-const ABOUT_BODY_COL1 =
-  'Creative director and design strategist based in New York, partnering with marketing and agency teams to translate strategy into packaging,';
-const ABOUT_BODY_COL2 =
-  'campaigns, and omni-channel launches for brands including Colgate, Yankee Candle, Sharpie, and Graco.';
-
-const ABOUT_ME_LEFT = [
+const ABOUT_ME_PARAGRAPHS = [
   'I am a Creative Leader driven by the intersection of strategic brand thinking, innovative packaging architecture, and omnichannel storytelling.',
   'With a career defined by global brand launches and large-scale visual transformations, I specialize in bridging the gap between high-level brand strategy and on-shelf execution. My leadership philosophy is rooted in the belief that the best design solutions are born from cross-functional collaboration. Whether I am navigating complex manufacturing requirements for a global launch or directing a fast-paced digital campaign, I thrive on translating business challenges into compelling, human-centric design experiences.',
+  'My experience spans the full brand lifecycle from conceptualizing innovative "white space" opportunities to leading global production across legacy brands like Clinique, Colgate, Yankee Candle, and Sharpie. I am energized by the challenge of evolving a brand\'s visual identity to remain relevant to contemporary consumers while maintaining the rigorous quality standards required for global retail success.',
+  'Beyond the Studio: My creative curiosity is constant. You\'ll often find me exploring the intersection of art and sneaker culture through my passion project, @Nikoles_Soles, where I experiment with illustration, motion design, and digital storytelling. Outside of work, I am an avid traveler and student of global aesthetics, often influenced by the textures found in international cinema and design. My world recently expanded in a new way as I stepped into the role of a parent this year. At home, I am happily overseen by my two feline coworkers, Bigby and Bailey, and my newest little creative inspiration.',
 ];
-
-const ABOUT_ME_RIGHT = [
-  'My experience spans the full brand lifecycle—from conceptualizing innovative "white space" opportunities to leading global production across legacy brands like Colgate, Yankee Candle, and Sharpie. I am energized by the challenge of evolving a brand\'s visual identity to remain relevant to contemporary consumers while maintaining the rigorous quality standards required for global retail success.',
-  'Beyond the Studio: My creative curiosity is constant. You\'ll often find me exploring the intersection of art and sneaker culture through my passion project, Nikole\'s Soles, where I experiment with illustration, motion design, and digital storytelling. Outside of work, I am an avid traveler and student of global aesthetics—often influenced by the textures and narratives found in anime, sci-fi, and international cinema. At home, I am happily overseen by my two feline coworkers, Bigby and Bailey.',
-];
-
-function splitOutcomes(project) {
-  if (!project) {
-    return [];
-  }
-  const fromCredits =
-    project.credits
-      ?.split('·')
-      .map((s) => s.trim())
-      .filter(Boolean) || [];
-  if (fromCredits.length >= 3) {
-    return fromCredits.slice(0, 4);
-  }
-  const sentences = project.description
-    ? project.description.split('. ').map((s) => s.trim()).filter(Boolean)
-    : [];
-  const merged = [...fromCredits, ...sentences];
-  return merged.slice(0, 4);
-}
 
 export default function LandingHome() {
   const navigate = useNavigate();
@@ -230,23 +262,28 @@ export default function LandingHome() {
   const mouseRef = useRef({ x: 0, y: 0 });
   const ringRef = useRef({ x: 0, y: 0 });
   const touchStartRef = useRef({ x: 0, y: 0, target: 0, axis: null });
+  const scrollUiCacheRef = useRef({
+    p1: null,
+    p2: null,
+    pam: null,
+    lastPanelIdx: -1,
+  });
 
-  const featuredProject = useMemo(
-    () => projects.find((p) => p.isFeatured && p.featuredRank === 1),
+  const aboutMeHeroImage = aboutHeadshot;
+  const featuredProjects = useMemo(() => getFeaturedProjects(projects), []);
+  const recentProjects = useMemo(
+    () => resolveProjectsBySlugs(HOMEPAGE_RECENT_SLUGS),
     [],
   );
-  const aboutMeHeroImage = aboutHeadshot;
-  const orderedWorkProjects = useMemo(() => buildOrderedWorkProjects(), []);
-  const workPageCount = Math.max(
-    1,
-    Math.ceil(orderedWorkProjects.length / WORK_PAGE_SIZE),
-  );
-  const [workPageIndex, setWorkPageIndex] = useState(0);
+  const [categoriesResetKey, setCategoriesResetKey] = useState(0);
   const [isInstagramOpen, setIsInstagramOpen] = useState(false);
-  const [showSplash, setShowSplash] = useState(() =>
-    typeof window !== 'undefined' &&
-    !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-  );
+  const [showSplash, setShowSplash] = useState(() => {
+    const show = shouldShowLandingSplash();
+    if (show) {
+      markLandingSplashSeen();
+    }
+    return show;
+  });
   const splashTimerRef = useRef(null);
   const p1PanelRef = useRef(null);
   const [isLandingMobile, setIsLandingMobile] = useState(() =>
@@ -260,20 +297,7 @@ export default function LandingHome() {
     }
     setShowSplash(false);
   }, []);
-  const visibleWorkProjects = useMemo(() => {
-    const start = workPageIndex * WORK_PAGE_SIZE;
-    return orderedWorkProjects.slice(start, start + WORK_PAGE_SIZE);
-  }, [orderedWorkProjects, workPageIndex]);
-  const showcaseProjects = useMemo(() => buildShowcaseProjects(), []);
-  const outcomes = useMemo(
-    () => splitOutcomes(featuredProject),
-    [featuredProject],
-  );
   const projectTotal = projects.length;
-
-  const advanceWorkPage = useCallback(() => {
-    setWorkPageIndex((i) => (i + 1) % workPageCount);
-  }, [workPageCount]);
 
   const getMaxScroll = useCallback(() => {
     if (isLandingMobileViewport()) {
@@ -281,6 +305,197 @@ export default function LandingHome() {
     }
     return getTrackMaxScrollPx(trackRef.current);
   }, []);
+
+  const notifyCategoriesEntered = useCallback((prevIdx, nextIdx) => {
+    if (
+      nextIdx === CATEGORIES_PANEL_INDEX &&
+      prevIdx !== CATEGORIES_PANEL_INDEX
+    ) {
+      setCategoriesResetKey((key) => key + 1);
+    }
+  }, []);
+
+  const applyPanelChrome = useCallback((panelIdx, hideScrollHint) => {
+    dotRefs.current.forEach((d, i) => {
+      if (d) {
+        d.classList.toggle('active', i === panelIdx);
+      }
+    });
+    if (scrollHintRef.current) {
+      if (hideScrollHint) {
+        scrollHintRef.current.style.opacity = '0';
+        scrollHintRef.current.style.pointerEvents = 'none';
+      } else {
+        scrollHintRef.current.style.opacity = '1';
+        scrollHintRef.current.style.pointerEvents = '';
+      }
+    }
+    const darkPanels = [2];
+    const navLinks = document.querySelectorAll(
+      '.landing-page .nav-links a, .landing-page .nav-links button, .landing-page .nav-logo',
+    );
+    const color = darkPanels.includes(panelIdx)
+      ? 'var(--cream)'
+      : 'var(--ink)';
+    navLinks.forEach((el) => {
+      el.style.color = color;
+    });
+    dotRefs.current.forEach((d) => {
+      if (!d) {
+        return;
+      }
+      if (d.classList.contains('active')) {
+        d.style.background = 'var(--rust)';
+      } else {
+        d.style.background = darkPanels.includes(panelIdx)
+          ? 'rgba(245,240,232,0.25)'
+          : 'rgba(26,23,20,0.18)';
+      }
+    });
+    if (scrollHintRef.current) {
+      scrollHintRef.current.style.color = darkPanels.includes(panelIdx)
+        ? 'rgba(245,240,232,0.35)'
+        : 'rgba(26,23,20,0.35)';
+    }
+    landingPageRef.current?.classList.remove('landing-cursor-light');
+  }, []);
+
+  const resetMobilePanelEffects = useCallback(() => {
+    const track = trackRef.current;
+    const p1El = track?.querySelector('.panel.p1');
+    if (p1El) {
+      p1El.style.setProperty('--p1-copy-shift', '0px');
+      p1El.style.setProperty('--p1-copy-opacity', '1');
+      p1El.style.setProperty('--p1-copy-blur', '0px');
+      p1El.classList.remove('p1-copy-hidden');
+    }
+    const aboutEl = track?.querySelector('.panel.p2');
+    if (aboutEl) {
+      aboutEl.style.setProperty('--p2-copy-shift', '0px');
+      aboutEl.style.setProperty('--p2-copy-opacity', '1');
+      aboutEl.style.setProperty('--p2-copy-blur', '0px');
+      aboutEl.classList.remove('p2-copy-hidden');
+    }
+    const pamEl = track?.querySelector('.panel.pam');
+    if (pamEl) {
+      pamEl.style.setProperty('--pam-photo-scale', '1');
+    }
+  }, []);
+
+  const updateMobileUi = useCallback(() => {
+    if (!isLandingMobileViewport()) {
+      return;
+    }
+    const track = trackRef.current;
+    const panelIdx = getMobileActivePanelIndex(track);
+    const cache = scrollUiCacheRef.current;
+    if (panelIdx !== cache.lastPanelIdx) {
+      notifyCategoriesEntered(cache.lastPanelIdx, panelIdx);
+      cache.lastPanelIdx = panelIdx;
+    }
+    const scrollHeight =
+      document.documentElement.scrollHeight - window.innerHeight;
+    const pct =
+      scrollHeight > 0 ? (window.scrollY / scrollHeight) * 100 : 0;
+    if (progressRef.current) {
+      progressRef.current.style.width = `${pct}%`;
+    }
+    applyPanelChrome(panelIdx, window.scrollY > 64);
+    resetMobilePanelEffects();
+    const p1El = track?.querySelector('.panel.p1');
+    if (p1El) {
+      const rect = p1El.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const scrollThrough = Math.max(
+        0,
+        Math.min(1, -rect.top / Math.max(vh * P1_HERO_SCROLL_FRACTION, 1)),
+      );
+      applyP1CopyFade(p1El, scrollThrough);
+    }
+  }, [applyPanelChrome, notifyCategoriesEntered, resetMobilePanelEffects]);
+
+  const updateUi = useCallback((x) => {
+    if (isLandingMobileViewport()) {
+      return;
+    }
+    const vw = window.innerWidth;
+    const max = getMaxScroll();
+    const pct = max > 0 ? (x / max) * 100 : 0;
+    if (progressRef.current) {
+      progressRef.current.style.width = `${pct}%`;
+    }
+    const track = trackRef.current;
+    const cache = scrollUiCacheRef.current;
+    if (track && !cache.p1) {
+      cache.p1 = track.querySelector('.panel.p1');
+      cache.p2 = track.querySelector('.panel.p2');
+      cache.pam = track.querySelector('.panel.pam');
+    }
+    const fromDom = getViewportPanelIndex(x, track);
+    const offsets = getPanelOffsets(track);
+    const scrollUnit = x / vw;
+    const panelIdx =
+      fromDom != null
+        ? fromDom
+        : offsets.reduce((active, offset, i) => {
+            return offset <= scrollUnit + 0.2 ? i : active;
+          }, 0);
+    if (panelIdx !== cache.lastPanelIdx) {
+      notifyCategoriesEntered(cache.lastPanelIdx, panelIdx);
+      cache.lastPanelIdx = panelIdx;
+      applyPanelChrome(panelIdx, x > 50);
+    }
+    const p1El = cache.p1;
+    if (p1El) {
+      const p1Max = vw * P1_HERO_SCROLL_FRACTION;
+      const p1Progress = p1Max > 0 ? Math.max(0, Math.min(1, x / p1Max)) : 0;
+      applyP1CopyFade(p1El, p1Progress);
+    }
+    const aboutEl = cache.p2;
+    if (aboutEl) {
+      const aboutStart = aboutEl.offsetLeft;
+      const aboutMax = Math.max(0, aboutEl.offsetWidth - vw);
+      const aboutLocal = Math.max(0, Math.min(x - aboutStart, aboutMax));
+      const aboutProgress = aboutMax > 0 ? aboutLocal / aboutMax : 0;
+      const copyFade = 1 - Math.max(0, Math.min(1, (aboutProgress - 0.22) / 0.12));
+      aboutEl.style.setProperty('--p2-copy-shift', `${aboutLocal.toFixed(2)}px`);
+      aboutEl.style.setProperty('--p2-copy-opacity', copyFade.toFixed(4));
+      aboutEl.style.setProperty('--p2-copy-blur', '0px');
+      aboutEl.classList.toggle('p2-copy-hidden', copyFade <= 0.02);
+    }
+    const pamEl = cache.pam;
+    if (pamEl) {
+      const pamStart = pamEl.offsetLeft;
+      const pw = pamEl.offsetWidth;
+      const vis = Math.min(x + vw, pamStart + pw) - Math.max(x, pamStart);
+      const denom = Math.min(pw, vw * 1.2);
+      const progress = denom > 0 ? Math.max(0, Math.min(1, vis / denom)) : 0;
+      const scale = 0.5 + progress * 0.5;
+      pamEl.style.setProperty('--pam-photo-scale', scale.toFixed(4));
+    }
+  }, [getMaxScroll, applyPanelChrome, notifyCategoriesEntered]);
+
+  const setScrollImmediate = useCallback(
+    (x) => {
+      const max = getMaxScroll();
+      const clamped = Math.max(0, Math.min(x, max));
+      targetXRef.current = clamped;
+      currentXRef.current = clamped;
+      if (trackRef.current) {
+        if (isLandingMobileViewport()) {
+          trackRef.current.style.transform = 'none';
+        } else {
+          trackRef.current.style.transform = `translate3d(${-clamped}px, 0, 0)`;
+        }
+      }
+      if (isLandingMobileViewport()) {
+        updateMobileUi();
+      } else {
+        updateUi(clamped);
+      }
+    },
+    [getMaxScroll, updateUi, updateMobileUi],
+  );
 
   const goToPanel = useCallback((index) => {
     const track = trackRef.current;
@@ -295,10 +510,20 @@ export default function LandingHome() {
       }
       return;
     }
-    const max = getTrackMaxScrollPx(track);
-    const raw = getScrollXForPanelIndex(track, index);
-    targetXRef.current = Math.max(0, Math.min(raw, max));
-  }, []);
+    scrollUiCacheRef.current.lastPanelIdx = -1;
+    setScrollImmediate(getScrollXForPanelIndex(track, index));
+  }, [setScrollImmediate]);
+
+  const scrollToCategories = useCallback(() => {
+    if (isLandingMobileViewport()) {
+      document.getElementById('categories')?.scrollIntoView({
+        behavior: 'auto',
+        block: 'start',
+      });
+      return;
+    }
+    goToPanel(CATEGORIES_PANEL_INDEX);
+  }, [goToPanel]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -329,152 +554,6 @@ export default function LandingHome() {
     dismissSplash,
     navigate,
   ]);
-
-  const applyPanelChrome = useCallback((panelIdx, hideScrollHint) => {
-    dotRefs.current.forEach((d, i) => {
-      if (d) {
-        d.classList.toggle('active', i === panelIdx);
-      }
-    });
-    if (scrollHintRef.current) {
-      if (hideScrollHint) {
-        scrollHintRef.current.style.opacity = '0';
-        scrollHintRef.current.style.pointerEvents = 'none';
-      } else {
-        scrollHintRef.current.style.opacity = '1';
-        scrollHintRef.current.style.pointerEvents = '';
-      }
-    }
-    const darkPanels = [2, 4, 6];
-    const navLinks = document.querySelectorAll(
-      '.landing-page .nav-links a, .landing-page .nav-links button, .landing-page .nav-logo',
-    );
-    const color = darkPanels.includes(panelIdx)
-      ? 'var(--cream)'
-      : 'var(--ink)';
-    navLinks.forEach((el) => {
-      el.style.color = color;
-    });
-    dotRefs.current.forEach((d) => {
-      if (!d) {
-        return;
-      }
-      if (d.classList.contains('active')) {
-        d.style.background = 'var(--rust)';
-      } else {
-        d.style.background = darkPanels.includes(panelIdx)
-          ? 'rgba(245,240,232,0.25)'
-          : 'rgba(26,23,20,0.18)';
-      }
-    });
-    if (scrollHintRef.current) {
-      scrollHintRef.current.style.color = darkPanels.includes(panelIdx)
-        ? 'rgba(245,240,232,0.35)'
-        : 'rgba(26,23,20,0.35)';
-    }
-    landingPageRef.current?.classList.toggle(
-      'landing-cursor-light',
-      panelIdx === 6,
-    );
-  }, []);
-
-  const resetMobilePanelEffects = useCallback(() => {
-    const track = trackRef.current;
-    const aboutEl = track?.querySelector('.panel.p2');
-    if (aboutEl) {
-      aboutEl.style.setProperty('--p2-copy-shift', '0px');
-      aboutEl.style.setProperty('--p2-copy-opacity', '1');
-      aboutEl.style.setProperty('--p2-copy-blur', '0px');
-      aboutEl.classList.remove('p2-copy-hidden');
-    }
-    const pamEl = track?.querySelector('.panel.pam');
-    if (pamEl) {
-      pamEl.style.setProperty('--pam-photo-scale', '1');
-    }
-  }, []);
-
-  const updateMobileUi = useCallback(() => {
-    if (!isLandingMobileViewport()) {
-      return;
-    }
-    const track = trackRef.current;
-    const panelIdx = getMobileActivePanelIndex(track);
-    const scrollHeight =
-      document.documentElement.scrollHeight - window.innerHeight;
-    const pct =
-      scrollHeight > 0 ? (window.scrollY / scrollHeight) * 100 : 0;
-    if (progressRef.current) {
-      progressRef.current.style.width = `${pct}%`;
-    }
-    applyPanelChrome(panelIdx, window.scrollY > 64);
-    resetMobilePanelEffects();
-  }, [applyPanelChrome, resetMobilePanelEffects]);
-
-  const updateUi = useCallback((x) => {
-    if (isLandingMobileViewport()) {
-      return;
-    }
-    const vw = window.innerWidth;
-    const max = getMaxScroll();
-    const pct = max > 0 ? (x / max) * 100 : 0;
-    if (progressRef.current) {
-      progressRef.current.style.width = `${pct}%`;
-    }
-    const offsets = getPanelOffsets();
-    const scrollUnit = x / vw;
-    const fromDom = getViewportPanelIndex(x, trackRef.current);
-    const panelIdx =
-      fromDom != null
-        ? fromDom
-        : offsets.reduce((active, offset, i) => {
-            return offset <= scrollUnit + 0.2 ? i : active;
-          }, 0);
-    applyPanelChrome(panelIdx, x > 50);
-    const aboutEl = trackRef.current?.querySelector('.panel.p2');
-    if (aboutEl) {
-      const aboutStart = aboutEl.offsetLeft;
-      const aboutMax = Math.max(0, aboutEl.offsetWidth - vw);
-      const aboutLocal = Math.max(0, Math.min(x - aboutStart, aboutMax));
-      const aboutProgress = aboutMax > 0 ? aboutLocal / aboutMax : 0;
-      const copyFade = 1 - Math.max(0, Math.min(1, (aboutProgress - 0.22) / 0.12));
-      aboutEl.style.setProperty('--p2-copy-shift', `${aboutLocal.toFixed(2)}px`);
-      aboutEl.style.setProperty('--p2-copy-opacity', copyFade.toFixed(4));
-      aboutEl.style.setProperty('--p2-copy-blur', `${((1 - copyFade) * 14).toFixed(2)}px`);
-      aboutEl.classList.toggle('p2-copy-hidden', copyFade <= 0.02);
-    }
-    const pamEl = trackRef.current?.querySelector('.panel.pam');
-    if (pamEl) {
-      const pamStart = pamEl.offsetLeft;
-      const pw = pamEl.offsetWidth;
-      const vis = Math.min(x + vw, pamStart + pw) - Math.max(x, pamStart);
-      const denom = Math.min(pw, vw * 1.2);
-      const progress = denom > 0 ? Math.max(0, Math.min(1, vis / denom)) : 0;
-      const scale = 0.5 + progress * 0.5;
-      pamEl.style.setProperty('--pam-photo-scale', scale.toFixed(4));
-    }
-  }, [getMaxScroll, applyPanelChrome]);
-
-  const setScrollImmediate = useCallback(
-    (x) => {
-      const max = getMaxScroll();
-      const clamped = Math.max(0, Math.min(x, max));
-      targetXRef.current = clamped;
-      currentXRef.current = clamped;
-      if (trackRef.current) {
-        if (isLandingMobileViewport()) {
-          trackRef.current.style.transform = 'none';
-        } else {
-          trackRef.current.style.transform = `translateX(${-clamped}px)`;
-        }
-      }
-      if (isLandingMobileViewport()) {
-        updateMobileUi();
-      } else {
-        updateUi(clamped);
-      }
-    },
-    [getMaxScroll, updateUi, updateMobileUi],
-  );
 
   useEffect(() => {
     document.documentElement.classList.add('landing-active');
@@ -616,7 +695,12 @@ export default function LandingHome() {
       if (
         scrollable &&
         Math.abs(e.deltaY) >= Math.abs(e.deltaX) &&
-        canConsumeVerticalScroll(scrollable, e.deltaY)
+        canConsumeVerticalScroll(scrollable, e.deltaY) &&
+        isCategoriesVerticalScrollAllowed(
+          scrollable,
+          currentXRef.current,
+          trackRef.current,
+        )
       ) {
         return;
       }
@@ -645,7 +729,15 @@ export default function LandingHome() {
       const dy = touchStartRef.current.y - touch.clientY;
       if (!touchStartRef.current.axis) {
         if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) {
-          if (findScrollableOverflowY(e.target)) {
+          const scrollable = findScrollableOverflowY(e.target);
+          if (
+            scrollable &&
+            isCategoriesVerticalScrollAllowed(
+              scrollable,
+              currentXRef.current,
+              trackRef.current,
+            )
+          ) {
             touchStartRef.current.axis = 'vertical';
           }
         }
@@ -694,13 +786,15 @@ export default function LandingHome() {
       const max = getMaxScroll();
       targetXRef.current = Math.min(targetXRef.current, max);
       currentXRef.current = Math.min(currentXRef.current, max);
+      scrollUiCacheRef.current.p1 = null;
+      scrollUiCacheRef.current.p2 = null;
+      scrollUiCacheRef.current.pam = null;
     };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, [getMaxScroll]);
 
   useEffect(() => {
-    const ease = 0.1;
     let isCancelled = false;
     const tick = () => {
       if (isCancelled) {
@@ -708,15 +802,18 @@ export default function LandingHome() {
       }
       const target = targetXRef.current;
       let current = currentXRef.current;
+      const distance = Math.abs(target - current);
+      const ease =
+        distance > window.innerWidth * 0.2 ? SCROLL_EASE_FAST : SCROLL_EASE;
       current += (target - current) * ease;
-      if (Math.abs(target - current) < 0.08) {
+      if (distance < 0.5) {
         current = target;
       }
       if (trackRef.current) {
         if (isLandingMobileViewport()) {
           trackRef.current.style.transform = 'none';
         } else {
-          trackRef.current.style.transform = `translateX(${-current}px)`;
+          trackRef.current.style.transform = `translate3d(${-current}px, 0, 0)`;
         }
       }
       currentXRef.current = current;
@@ -744,7 +841,7 @@ export default function LandingHome() {
     }
     splashTimerRef.current = window.setTimeout(() => {
       splashTimerRef.current = null;
-      setShowSplash(false);
+      dismissSplash();
     }, 2900);
     return () => {
       if (splashTimerRef.current != null) {
@@ -752,7 +849,7 @@ export default function LandingHome() {
         splashTimerRef.current = null;
       }
     };
-  }, [showSplash]);
+  }, [showSplash, dismissSplash]);
 
   useEffect(() => {
     if (!showSplash) {
@@ -766,11 +863,6 @@ export default function LandingHome() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [showSplash, dismissSplash]);
-
-  const caseImage = featuredProject
-    ? getProjectImage(featuredProject)
-    : null;
-  const caseVideo = featuredProject?.cardVideo || null;
 
   return (
     <div className="landing-page" ref={landingPageRef}>
@@ -811,7 +903,7 @@ export default function LandingHome() {
             </button>
           </li>
           <li>
-            <button type="button" onClick={() => goToPanel(1)}>
+            <button type="button" onClick={() => goToPanel(2)}>
               Work
             </button>
           </li>
@@ -821,14 +913,17 @@ export default function LandingHome() {
             </button>
           </li>
           <li>
-            <button type="button" onClick={() => goToPanel(5)}>
+            <button type="button" onClick={() => goToPanel(4)}>
               About Me
             </button>
           </li>
           <li>
-            <button type="button" onClick={() => goToPanel(6)}>
+            <button type="button" onClick={() => goToPanel(5)}>
               Contact
             </button>
+          </li>
+          <li>
+            <ProjectSearchButton />
           </li>
         </ul>
       </nav>
@@ -876,22 +971,20 @@ export default function LandingHome() {
             </div>
             <div className="p1-content">
               <div className="p1-eyebrow">
-                Creative Director &amp; Design Strategist — Portfolio 2026
+                Creative Strategy • Packaging Innovation • Design Leadership
               </div>
               <h1 className="p1-name">
                 Nikole
                 <br />
                 Glenn<span className="italic">.</span>
               </h1>
-              <p className="p1-tagline">
-                I turn brand strategy into packaging, campaigns, and retail
-                experiences people notice from structural storytelling to
-                products being shelf-ready for global brands.
-              </p>
               <button
                 type="button"
                 className="p1-cta-btn"
-                onClick={() => goToPanel(2)}
+                onClick={() => {
+                  dismissSplash();
+                  goToPanel(FIRST_WORK_PANEL_INDEX);
+                }}
               >
                 View selected work
                 <svg width="18" height="10" viewBox="0 0 18 10" fill="none" aria-hidden="true">
@@ -917,40 +1010,24 @@ export default function LandingHome() {
             <div className="p2-flow">
               <div className="p2-canvas">
                 <div className="p2-editorial-block">
-                  <div className="panel-label">01 / About</div>
                   <h2 className="p2-headline">
                     Design that lives
                     <br />
                     <em>on shelf &amp; screen</em>
                   </h2>
-                  <div className="p2-body-columns">
-                    <p className="p2-body-col">{ABOUT_BODY_COL1}</p>
-                    <p className="p2-body-col">{ABOUT_BODY_COL2}</p>
-                  </div>
+                  <p className="p2-body-col">{ABOUT_BODY}</p>
                   <div className="p2-stats">
                     <div className="stat">
                       <div className="stat-num">15+</div>
-                      <div className="stat-label">
-                        Years
-                        <br />
-                        leading creative
-                      </div>
+                      <div className="stat-label">leading creative</div>
                     </div>
                     <div className="stat">
-                      <div className="stat-num">{projectTotal}+</div>
-                      <div className="stat-label">
-                        Portfolio
-                        <br />
-                        case studies
-                      </div>
+                      <div className="stat-num">21+</div>
+                      <div className="stat-label">Projects</div>
                     </div>
                     <div className="stat">
                       <div className="stat-num">NYC</div>
-                      <div className="stat-label">
-                        Based in
-                        <br />
-                        New York
-                      </div>
+                      <div className="stat-label">Based</div>
                     </div>
                   </div>
                 </div>
@@ -960,9 +1037,9 @@ export default function LandingHome() {
                     role="list"
                     aria-label="Featured project previews"
                   >
-                    {showcaseProjects.slice(0, 3).map((project, index) => {
+                    {featuredProjects.map((project, index) => {
                       const img = getProjectImage(project);
-                      const showCardVideo = Boolean(project.cardVideo);
+                      const showCardVideo = hasCardVideo(project);
                       return (
                         <Link
                           key={project.slug}
@@ -983,7 +1060,8 @@ export default function LandingHome() {
                             {showCardVideo ? (
                               <ProjectCardVideo
                                 src={project.cardVideo}
-                                layout="fill"
+                                mp4Src={getCardVideoMp4(project)}
+                                layout={getCardVideoLayout(project)}
                               />
                             ) : null}
                           </div>
@@ -1004,7 +1082,6 @@ export default function LandingHome() {
             <div className="p3-content">
               <div className="p3-header">
                 <div>
-                  <div className="panel-label">02 / Selected Work</div>
                   <h2 className="p3-headline">
                     Recent
                     <br />
@@ -1016,74 +1093,82 @@ export default function LandingHome() {
                     <span className="p3-meta-core">
                       {WORK_PAGE_SIZE} highlights · {projectTotal} total
                     </span>
-                    {orderedWorkProjects.length > WORK_PAGE_SIZE ? (
-                      <>
-                        <span className="p3-meta-sep" aria-hidden="true">
-                          ·
-                        </span>
-                        <span className="p3-meta-more">More Projects</span>
-                      </>
-                    ) : null}
-                  </span>
-                  {orderedWorkProjects.length > WORK_PAGE_SIZE ? (
+                    <span className="p3-meta-sep" aria-hidden="true">
+                      ·
+                    </span>
                     <button
                       type="button"
-                      className="p3-next-set"
-                      onClick={advanceWorkPage}
-                      aria-label="Show next set of projects"
+                      className="p3-meta-more"
+                      onClick={scrollToCategories}
                     >
-                      <svg
-                        width="26"
-                        height="26"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M5 8l5 5 5-5"
-                          stroke="currentColor"
-                          strokeWidth="1.45"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                      More Projects
                     </button>
-                  ) : null}
+                  </span>
+                  <button
+                    type="button"
+                    className="p3-next-set"
+                    onClick={scrollToCategories}
+                    aria-label="Go to categories"
+                  >
+                    <svg
+                      width="26"
+                      height="26"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M8 5l5 5-5 5"
+                        stroke="currentColor"
+                        strokeWidth="1.45"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </div>
               <div className="work-grid">
-                {visibleWorkProjects.map((project, index) => {
+                {recentProjects.map((project, index) => {
                   const img = getProjectImage(project);
-                  const showWorkVideo = Boolean(project.cardVideo);
+                  const showWorkVideo = hasCardVideo(project);
+                  const isImageIntrinsic = isCardImageIntrinsic(project);
                   const style =
-                    img && !showWorkVideo
-                      ? {
-                          backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.5)), url(${img})`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                        }
+                    img && !showWorkVideo && !isImageIntrinsic
+                      ? getWorkGridImageStyle(img, 'cover')
                       : undefined;
-                  const visualIndex = workPageIndex * WORK_PAGE_SIZE + index;
+                  const visualIndex = index;
                   return (
                     <Link
                       key={project.slug}
                       to={`/portfolio/${project.slug}`}
-                      className="wc"
+                      className={`wc${isImageIntrinsic ? ' wc--image-intrinsic' : ''}`}
                     >
                       <div
-                        className={`wc-inner ${WC_GRADIENTS[visualIndex % WC_GRADIENTS.length]}`}
+                        className={[
+                          'wc-inner',
+                          WC_GRADIENTS[visualIndex % WC_GRADIENTS.length],
+                          isImageIntrinsic ? 'wc-inner--image-intrinsic' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
                         style={style}
                       >
                         {showWorkVideo ? (
                           <ProjectCardVideo
                             src={project.cardVideo}
+                            mp4Src={getCardVideoMp4(project)}
                             layout="fill"
+                          />
+                        ) : isImageIntrinsic ? (
+                          <img
+                            src={img}
+                            alt=""
+                            className="wc-img-intrinsic"
+                            loading="lazy"
                           />
                         ) : null}
                         <div className="wc-overlay" />
-                        <div
-                          className={`wc-shape ${SHAPE_CLASSES[visualIndex % SHAPE_CLASSES.length]}`}
-                        />
                         <div className="wc-cat">{getFirstTag(project)}</div>
                         <div className="wc-title">{project.title}</div>
                         <div className="wc-year">View case study →</div>
@@ -1095,143 +1180,23 @@ export default function LandingHome() {
             </div>
           </section>
 
-          <LandingCategoriesPanel />
-
-          <section className="panel p5" aria-label="Featured case study">
-            <div className="p5-content">
-              <div className="p5-left">
-                <div className="p5-label">04 / Case Study</div>
-                <h2 className="p5-headline">
-                  {featuredProject ? (
-                    <>
-                      Featured launch
-                      <br />
-                      <em>{featuredProject.title}</em>
-                    </>
-                  ) : (
-                    <>
-                      Featured
-                      <br />
-                      <em>project</em>
-                    </>
-                  )}
-                </h2>
-                <p className="p5-body">
-                  {featuredProject
-                    ? featuredProject.description
-                    : 'Explore the portfolio for packaging, campaigns, and retail systems.'}
-                </p>
-                <div className="p5-outcomes">
-                  {(outcomes.length > 0
-                    ? outcomes
-                    : [
-                        'Art direction across packaging and campaign touchpoints',
-                        'Collaboration with insights, marketing, and agency partners',
-                        'Launch-ready assets for retail and digital',
-                      ]
-                  ).map((line, outcomeIndex) => (
-                    <div key={`${line}-${outcomeIndex}`} className="outcome">
-                      {line}
-                    </div>
-                  ))}
-                </div>
-                {featuredProject && (
-                  <Link
-                    to={`/portfolio/${featuredProject.slug}`}
-                    className="p1-cta-btn"
-                    style={{ width: 'fit-content' }}
-                  >
-                    Open full project
-                  </Link>
-                )}
-              </div>
-              <div
-                className="p5-right"
-                style={
-                  caseImage && !caseVideo
-                    ? {
-                        backgroundImage: `linear-gradient(120deg, rgba(0,0,0,0.35), rgba(74,103,65,0.55)), url(${caseImage})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                      }
-                    : undefined
-                }
-              >
-                {caseVideo ? (
-                  <ProjectCardVideo src={caseVideo} layout="fill" />
-                ) : null}
-                <div className="p5-bg-circles" aria-hidden="true">
-                  <div
-                    className="bg-circle"
-                    style={{
-                      width: '500px',
-                      height: '500px',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%,-50%)',
-                    }}
-                  />
-                  <div
-                    className="bg-circle"
-                    style={{
-                      width: '300px',
-                      height: '300px',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%,-50%)',
-                    }}
-                  />
-                </div>
-                {!caseImage && !caseVideo && (
-                  <div className="case-mock" aria-hidden="true">
-                    <div className="mock-bottle">
-                      <div className="mock-cap" />
-                      <div className="mock-label">
-                        <div className="mock-label-line1" />
-                        <div className="mock-label-line2" />
-                        <div className="mock-label-line3" />
-                        <div
-                          className="mock-label-line2"
-                          style={{ width: '32px', marginTop: '4px' }}
-                        />
-                      </div>
-                    </div>
-                    <div className="mock-box">
-                      <div className="mock-box-line1" />
-                      <div className="mock-box-line2" />
-                    </div>
-                    <div className="mock-tube" />
-                  </div>
-                )}
-              </div>
-            </div>
-          </section>
+          <LandingCategoriesPanel resetKey={categoriesResetKey} />
 
           <section className="panel pam" aria-label="About me">
             <div className="pam-grid-lines" aria-hidden="true" />
             <div className="pam-inner">
               <div className="pam-main">
-                <div className="panel-label">05 / About Me</div>
                 <h2 className="pam-headline">
                   The craft
                   <br />
                   is in the <em>collaboration</em>
                 </h2>
-                <div className="pam-columns">
-                  <div className="pam-column">
-                    {ABOUT_ME_LEFT.map((paragraph, index) => (
-                      <p key={index} className="pam-para">
-                        {paragraph}
-                      </p>
-                    ))}
-                  </div>
-                  <div className="pam-column">
-                    {ABOUT_ME_RIGHT.map((paragraph, index) => (
-                      <p key={index} className="pam-para">
-                        {paragraph}
-                      </p>
-                    ))}
-                  </div>
+                <div className="pam-copy">
+                  {ABOUT_ME_PARAGRAPHS.map((paragraph, index) => (
+                    <p key={index} className="pam-para">
+                      {paragraph}
+                    </p>
+                  ))}
                 </div>
                 <BrandMarquee className="pam-brand-marquee" label="Client brands" />
                 <div className="pam-footer">
@@ -1292,7 +1257,6 @@ export default function LandingHome() {
               OPEN
             </div>
             <div className="p6-content">
-              <div className="p6-label">06 / Let&apos;s work together</div>
               <h2 className="p6-headline">
                 Ready to
                 <br />
@@ -1331,7 +1295,7 @@ export default function LandingHome() {
                 <button
                   type="button"
                   className="social-link"
-                  onClick={() => goToPanel(5)}
+                  onClick={() => goToPanel(4)}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
                     <circle cx="12" cy="8" r="4" />

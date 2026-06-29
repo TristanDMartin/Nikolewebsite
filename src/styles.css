@@ -23,8 +23,7 @@ body {
   padding: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: 'Raleway', system-ui, -apple-system, BlinkMacSystemFont,
-    'Segoe UI', sans-serif;
+  font-family: var(--font-sans);
 }
 
 body {
@@ -672,13 +671,24 @@ main {
 .gallery-lightbox {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.95);
-  z-index: 2000;
+  z-index: 10002;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 48px;
-  cursor: pointer;
+  pointer-events: auto;
+  isolation: isolate;
+}
+
+.gallery-lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.95);
+  cursor: default;
 }
 
 .lightbox-close {
@@ -698,7 +708,10 @@ main {
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  z-index: 2001;
+  z-index: 2;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .lightbox-close:hover {
@@ -724,7 +737,10 @@ main {
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  z-index: 2001;
+  z-index: 2;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .lightbox-prev {
@@ -742,14 +758,19 @@ main {
 }
 
 .lightbox-image {
+  position: relative;
+  z-index: 1;
   max-width: 90vw;
   max-height: 90vh;
-  cursor: default;
+  pointer-events: none;
 }
 
 .lightbox-image img {
-  width: 100%;
-  height: 100%;
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 90vw;
+  max-height: 90vh;
   object-fit: contain;
   border-radius: 8px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
@@ -766,7 +787,8 @@ main {
   background: rgba(0, 0, 0, 0.5);
   padding: 8px 16px;
   border-radius: 20px;
-  z-index: 2001;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .related-projects-section {
@@ -1075,12 +1097,50 @@ main {
   align-self: start;
 }
 
-.portfolio-item--video-intrinsic .portfolio-item-link {
+.portfolio-item--image-intrinsic {
+  aspect-ratio: unset;
   height: auto;
+  align-self: start;
+}
+
+.portfolio-item--video-intrinsic .portfolio-item-link,
+.portfolio-item--image-intrinsic .portfolio-item-link {
+  height: auto;
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.portfolio-item--video-intrinsic .portfolio-item-image-wrapper,
+.portfolio-item--image-intrinsic .portfolio-item-image-wrapper {
+  height: auto;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .portfolio-item--video-intrinsic .portfolio-item-image-wrapper {
+  display: flex;
+  justify-content: center;
+}
+
+.portfolio-item--image-intrinsic .portfolio-item-link {
+  width: 100%;
+}
+
+.portfolio-item--image-intrinsic .portfolio-item-image-wrapper {
+  display: block;
+  width: 100%;
+}
+
+.portfolio-item-image--intrinsic {
+  width: 100%;
   height: auto;
+  display: block;
+  background: none;
+}
+
+.portfolio-item:hover .portfolio-item-image--intrinsic {
+  transform: none;
 }
 
 .portfolio-item-link {
@@ -1099,22 +1159,26 @@ main {
   overflow: hidden;
 }
 
+.portfolio-item-image-wrapper:has(.pcv--portrait) {
+  display: block;
+  height: auto;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  background: #000;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
 .portfolio-item-image-wrapper:has(.pcv--intrinsic) {
-  background:
-    radial-gradient(
-      circle at 25% 25%,
-      rgba(255, 255, 255, 0.9),
-      transparent 55%
-    ),
-    radial-gradient(
-      circle at 75% 30%,
-      rgba(255, 255, 255, 0.7),
-      transparent 45%
-    ),
-    linear-gradient(145deg, #dfe3ef 0%, #cfd5e8 100%);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  height: auto;
+  background: transparent;
+}
+
+.portfolio-item--video-intrinsic:has(.pcv--portrait) .portfolio-item-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
 }
 
 .portfolio-item-image {
@@ -1381,8 +1445,10 @@ main {
 
   .lightbox-close,
   .lightbox-nav {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
     font-size: 20px;
   }
 
@@ -1491,6 +1557,7 @@ main {
   display: grid;
   gap: 32px;
   width: 100%;
+  min-width: 0;
   max-width: none;
 }
 
@@ -1711,6 +1778,9 @@ main {
 .brand-marquee {
   overflow: hidden;
   width: 100%;
+  min-width: 0;
+  flex-shrink: 0;
+  min-height: 3.25rem;
   mask-image: linear-gradient(
     to right,
     transparent,

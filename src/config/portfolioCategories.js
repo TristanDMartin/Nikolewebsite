@@ -35,9 +35,10 @@ export const portfolioCategories = [
       'Bridging design and manufacturing—solving technical challenges while holding luxury aesthetics.',
     slugs: [
       'clinique-uv-solutions',
+      'clinique-chubby-franchise',
       'yankee-candle-2018-holiday-gift-sets',
     ],
-    upcomingLabels: ['Clinique Chubby Franchise (Global Relaunch)'],
+    upcomingLabels: [],
   },
   {
     id: 'retail-impact',
@@ -57,13 +58,14 @@ export const portfolioCategories = [
     narrative:
       'Leading high-energy teams to connect traditional design with modern digital storytelling.',
     slugs: [
+      'bumble-and-bumble-holiday-2024',
       'bumble-and-bumble-holiday-2023',
       'bumble-and-bumble-holiday-2022',
       'sharpie-2017-limited-edition-packs',
       'prismacolor-instagram-videos',
       'paper-mate-flair-coloring-kit',
     ],
-    upcomingLabels: ['Bumble and bumble Holiday 2024: Pop Holiday'],
+    upcomingLabels: [],
   },
   {
     id: 'creative-vision',

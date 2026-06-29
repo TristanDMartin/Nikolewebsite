@@ -1,44 +1,147 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useParams } from 'react-router-dom';
 import { projects } from '../data/projects';
 import ProjectCardVideo from './ProjectCardVideo';
 
+import {
+  getProjectThumbnail,
+  getGalleryItems,
+  getGalleryStripItems,
+  getAllGalleryItems,
+} from '../utils/projectMedia';
+
 function getProjectImage(proj) {
-  return proj.image || (proj.gallery && proj.gallery[0]) || null;
+  return getProjectThumbnail(proj);
 }
 
-function getGalleryGridClass(imageCount) {
-  if (imageCount <= 1) {
-    return 'portfolio-case-gallery--1';
-  }
-  if (imageCount === 2) {
-    return 'portfolio-case-gallery--2';
-  }
-  if (imageCount === 3) {
-    return 'portfolio-case-gallery--3';
-  }
-  if (imageCount === 4) {
-    return 'portfolio-case-gallery--4';
-  }
-  if (imageCount === 5) {
-    return 'portfolio-case-gallery--5';
-  }
-  return 'portfolio-case-gallery--many';
+function GalleryImageCard({ item, index, title, onSelect, variant = 'default' }) {
+  const alt = item.alt || `${title} — ${index + 1}`;
+  return (
+    <button
+      type="button"
+      className={[
+        'portfolio-case-gallery-card',
+        item.transparentBg ? 'portfolio-case-gallery-card--transparent' : '',
+        variant === 'strip' ? 'portfolio-case-gallery-card--strip' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      onClick={onSelect}
+    >
+      <img
+        className="portfolio-case-gallery-img"
+        src={item.src}
+        alt={alt}
+        width={item.width}
+        height={item.height}
+        loading={index === 0 ? 'eager' : 'lazy'}
+        decoding="async"
+        sizes="(min-width: 1400px) 1400px, 100vw"
+      />
+    </button>
+  );
 }
 
-function getFirstTag(project) {
-  if (!project?.tags) {
+function getGalleryLayoutClass(galleryDisplay) {
+  if (galleryDisplay === 'native') {
+    return 'portfolio-case-gallery--native';
+  }
+  return '';
+}
+
+function GalleryLightbox({
+  items,
+  selectedIndex,
+  title,
+  onClose,
+  onSelectIndex,
+}) {
+  const item = items[selectedIndex];
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (event.key === 'ArrowLeft' && selectedIndex > 0) {
+        onSelectIndex(selectedIndex - 1);
+        return;
+      }
+      if (event.key === 'ArrowRight' && selectedIndex < items.length - 1) {
+        onSelectIndex(selectedIndex + 1);
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [items.length, onClose, onSelectIndex, selectedIndex]);
+
+  if (!item) {
     return null;
   }
-  return project.tags.split(' • ')[0].trim();
-}
 
-function getHeroExcerpt(description) {
-  if (!description) {
-    return '';
-  }
-  const paragraph = description.split('\n\n')[0];
-  return paragraph.trim();
+  return createPortal(
+    <div
+      className="gallery-lightbox"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${title} image preview`}
+    >
+      <button
+        type="button"
+        className="gallery-lightbox-backdrop"
+        aria-label="Close preview"
+        onClick={onClose}
+      />
+      <button
+        type="button"
+        className="lightbox-close"
+        aria-label="Close preview"
+        onClick={onClose}
+      >
+        ×
+      </button>
+      {selectedIndex > 0 ? (
+        <button
+          type="button"
+          className="lightbox-nav lightbox-prev"
+          aria-label="Previous image"
+          onClick={() => onSelectIndex(selectedIndex - 1)}
+        >
+          ←
+        </button>
+      ) : null}
+      <div className="lightbox-image">
+        <img
+          src={item.src}
+          alt={item.alt || `${title} - Image ${selectedIndex + 1}`}
+          width={item.width}
+          height={item.height}
+          decoding="async"
+        />
+      </div>
+      {selectedIndex < items.length - 1 ? (
+        <button
+          type="button"
+          className="lightbox-nav lightbox-next"
+          aria-label="Next image"
+          onClick={() => onSelectIndex(selectedIndex + 1)}
+        >
+          →
+        </button>
+      ) : null}
+      <div className="lightbox-counter" aria-live="polite">
+        {selectedIndex + 1} / {items.length}
+      </div>
+    </div>,
+    document.body,
+  );
 }
 
 export default function PortfolioProjectPage() {
@@ -70,14 +173,32 @@ export default function PortfolioProjectPage() {
       .slice(0, 3);
   }, [project, slug]);
 
+  const galleryItems = useMemo(
+    () => (project ? getGalleryItems(project) : []),
+    [project],
+  );
+  const galleryStripItems = useMemo(
+    () => (project ? getGalleryStripItems(project) : []),
+    [project],
+  );
+  const allGalleryItems = useMemo(
+    () => (project ? getAllGalleryItems(project) : []),
+    [project],
+  );
+  const closeLightbox = useCallback(() => {
+    setSelectedImage(null);
+  }, []);
+  const selectLightboxIndex = useCallback((index) => {
+    setSelectedImage(index);
+  }, []);
+
   if (!project) {
     return (
       <main className="portfolio-case">
         <section className="portfolio-hero portfolio-case-hero">
           <div className="portfolio-hero-content">
-            <p className="site-panel-label">Case study</p>
             <h1 className="portfolio-hero-title">Project not found</h1>
-            <Link className="site-cta-btn site-cta-btn--on-dark" to="/portfolio">
+            <Link className="site-cta-btn site-cta-btn--on-dark" to="/?panel=2">
               Back to portfolio
             </Link>
           </div>
@@ -86,55 +207,28 @@ export default function PortfolioProjectPage() {
     );
   }
 
-  const hasGallery = Boolean(project.gallery && project.gallery.length > 0);
-  const heroImage = getProjectImage(project);
-  const heroVideo = project.cardVideo || null;
-  const firstTag = getFirstTag(project);
-  const heroExcerpt = getHeroExcerpt(project.description);
-
+  const hasGallery =
+    galleryItems.length > 0 || galleryStripItems.length > 0;
+  const hasGalleryVideos = Boolean(
+    project.galleryVideos && project.galleryVideos.length > 0,
+  );
   return (
     <main className="portfolio-case">
       <section className="portfolio-hero portfolio-case-hero">
         <div className="portfolio-hero-content">
-          <p className="site-panel-label portfolio-hero-eyebrow">
-            Case study
-          </p>
           <h1 className="portfolio-hero-title">{project.title}</h1>
           {project.tags ? (
             <p className="portfolio-hero-meta">
               {project.tags.split(' • ').join(' · ')}
             </p>
           ) : null}
-          {heroExcerpt ? (
-            <p className="portfolio-hero-description">{heroExcerpt}</p>
-          ) : null}
         </div>
       </section>
-
-      {(heroVideo || heroImage) && (
-        <section className="portfolio-case-feature" aria-label="Featured visual">
-          <div className="portfolio-case-feature-inner">
-            {heroVideo ? (
-              <div className="portfolio-case-feature-media portfolio-case-feature-media--video">
-                <ProjectCardVideo src={heroVideo} />
-              </div>
-            ) : (
-              <div
-                className="portfolio-case-feature-media"
-                style={{ backgroundImage: `url(${heroImage})` }}
-              />
-            )}
-          </div>
-        </section>
-      )}
 
       <section className="portfolio-grid-section portfolio-case-section" aria-label="Overview">
         <div className="portfolio-grid-container">
           <div className="portfolio-grid-header">
             <p className="site-panel-label">Project overview</p>
-            {firstTag ? (
-              <p className="portfolio-grid-meta">{firstTag}</p>
-            ) : null}
           </div>
           <div className="portfolio-case-story">
             <p className="portfolio-case-lede">{project.description}</p>
@@ -152,45 +246,75 @@ export default function PortfolioProjectPage() {
         </div>
       </section>
 
+      {hasGalleryVideos ? (
+        <section
+          className="portfolio-grid-section portfolio-case-section portfolio-case-videos"
+          aria-label="Project videos"
+        >
+          <div className="portfolio-grid-container">
+            <div className="portfolio-case-video-gallery">
+              {project.galleryVideos.map((item, index) => (
+                <div
+                  key={item.src}
+                  className="portfolio-case-video-card"
+                >
+                  <ProjectCardVideo
+                    src={item.src}
+                    mp4Src={item.mp4}
+                    bottomScrim={false}
+                  />
+                  {item.label ? (
+                    <p className="portfolio-case-video-label">
+                      {String(index + 1).padStart(2, '0')} · {item.label}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       {hasGallery ? (
         <section
           className="portfolio-grid-section portfolio-case-section portfolio-case-assets"
-          aria-label="Campaign assets"
+          aria-label="Project gallery"
         >
           <div className="portfolio-grid-container">
-            <div className="portfolio-grid-header">
-              <p className="site-panel-label">Campaign assets</p>
-              <p className="portfolio-grid-meta">
-                {project.gallery.length}{' '}
-                {project.gallery.length === 1 ? 'file' : 'files'}
-              </p>
-            </div>
             <div
-              className={`portfolio-case-gallery ${getGalleryGridClass(project.gallery.length)}`}
+              className={[
+                'portfolio-case-gallery',
+                getGalleryLayoutClass(project.galleryDisplay),
+              ]
+                .filter(Boolean)
+                .join(' ')}
             >
-              {project.gallery.map((src, index) => (
-                <button
-                  key={src}
-                  type="button"
-                  className={[
-                    'portfolio-case-gallery-card',
-                    index === 0 ? 'portfolio-case-gallery-card--lead' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  onClick={() => setSelectedImage(index)}
-                >
-                  <img
-                    className="portfolio-case-gallery-img"
-                    src={src}
-                    alt={`${project.title} — ${index + 1}`}
-                    loading={index === 0 ? 'eager' : 'lazy'}
-                  />
-                  <span className="portfolio-case-gallery-label">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                </button>
+              {galleryItems.map((item, index) => (
+                <GalleryImageCard
+                  key={item.src}
+                  item={item}
+                  index={index}
+                  title={project.title}
+                  onSelect={() => setSelectedImage(index)}
+                />
               ))}
+              {galleryStripItems.length > 0 ? (
+                <div className="portfolio-case-gallery-strip">
+                  {galleryStripItems.map((item, stripIndex) => {
+                    const index = galleryItems.length + stripIndex;
+                    return (
+                      <GalleryImageCard
+                        key={item.src}
+                        item={item}
+                        index={index}
+                        title={project.title}
+                        variant="strip"
+                        onSelect={() => setSelectedImage(index)}
+                      />
+                    );
+                  })}
+                </div>
+              ) : null}
             </div>
           </div>
         </section>
@@ -204,12 +328,10 @@ export default function PortfolioProjectPage() {
           <div className="portfolio-grid-container">
             <div className="portfolio-grid-header">
               <p className="site-panel-label">Related work</p>
-              <p className="portfolio-grid-meta">More in this lane</p>
             </div>
             <div className="portfolio-masonry-grid portfolio-case-related-grid">
               {relatedProjects.map((relatedProject) => {
                 const img = getProjectImage(relatedProject);
-                const tag = getFirstTag(relatedProject);
                 return (
                   <article key={relatedProject.slug} className="portfolio-item">
                     <Link
@@ -227,9 +349,6 @@ export default function PortfolioProjectPage() {
                         />
                         <div className="portfolio-item-overlay">
                           <div className="portfolio-item-content">
-                            {tag ? (
-                              <p className="portfolio-item-meta">{tag}</p>
-                            ) : null}
                             <h2 className="portfolio-item-title">
                               {relatedProject.title}
                             </h2>
@@ -254,7 +373,7 @@ export default function PortfolioProjectPage() {
             <p className="site-panel-label">Next steps</p>
           </div>
           <div className="portfolio-case-nav">
-            <Link className="site-cta-btn" to="/portfolio">
+            <Link className="site-cta-btn" to="/?panel=2">
               All projects
             </Link>
             {prevProject ? (
@@ -285,60 +404,14 @@ export default function PortfolioProjectPage() {
         </div>
       </section>
 
-      {selectedImage !== null && project.gallery ? (
-        <div
-          className="gallery-lightbox"
-          onClick={() => setSelectedImage(null)}
-          role="presentation"
-        >
-          <button
-            type="button"
-            className="lightbox-close"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedImage(null);
-            }}
-          >
-            ×
-          </button>
-          {selectedImage > 0 ? (
-            <button
-              type="button"
-              className="lightbox-nav lightbox-prev"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedImage(selectedImage - 1);
-              }}
-            >
-              ←
-            </button>
-          ) : null}
-          <div
-            className="lightbox-image"
-            onClick={(e) => e.stopPropagation()}
-            role="presentation"
-          >
-            <img
-              src={project.gallery[selectedImage]}
-              alt={`${project.title} - Image ${selectedImage + 1}`}
-            />
-          </div>
-          {selectedImage < project.gallery.length - 1 ? (
-            <button
-              type="button"
-              className="lightbox-nav lightbox-next"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedImage(selectedImage + 1);
-              }}
-            >
-              →
-            </button>
-          ) : null}
-          <div className="lightbox-counter">
-            {selectedImage + 1} / {project.gallery.length}
-          </div>
-        </div>
+      {selectedImage !== null && allGalleryItems.length > 0 ? (
+        <GalleryLightbox
+          items={allGalleryItems}
+          selectedIndex={selectedImage}
+          title={project.title}
+          onClose={closeLightbox}
+          onSelectIndex={selectLightboxIndex}
+        />
       ) : null}
     </main>
   );

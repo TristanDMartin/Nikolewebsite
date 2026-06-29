@@ -60,9 +60,9 @@ const AboutPage = () => (
               experiences.
             </p>
             <p className="body-text">
-              My experience spans the full brand lifecycle—from conceptualizing innovative
+              My experience spans the full brand lifecycle from conceptualizing innovative
               &quot;white space&quot; opportunities to leading global production across legacy
-              brands like Colgate, Yankee Candle, and Sharpie. I am energized by the
+              brands like Clinique, Colgate, Yankee Candle, and Sharpie. I am energized by the
               challenge of evolving a brand&apos;s visual identity to remain relevant to
               contemporary consumers while maintaining the rigorous quality standards
               required for global retail success.
@@ -70,11 +70,20 @@ const AboutPage = () => (
             <p className="body-text">
               <strong>Beyond the Studio:</strong> My creative curiosity is constant.
               You&apos;ll often find me exploring the intersection of art and sneaker culture
-              through my passion project, Nikole&apos;s Soles, where I experiment with
-              illustration, motion design, and digital storytelling. Outside of work, I am
-              an avid traveler and student of global aesthetics—often influenced by the
-              textures and narratives found in anime, sci-fi, and international cinema. At
-              home, I am happily overseen by my two feline coworkers, Bigby and Bailey.
+              through my passion project,{' '}
+              <a
+                href="https://www.instagram.com/nikoles_soles/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                @Nikoles_Soles
+              </a>
+              , where I experiment with illustration, motion design, and digital
+              storytelling. Outside of work, I am an avid traveler and student of global
+              aesthetics, often influenced by the textures found in international cinema and
+              design. My world recently expanded in a new way as I stepped into the role of
+              a parent this year. At home, I am happily overseen by my two feline coworkers,
+              Bigby and Bailey, and my newest little creative inspiration.
             </p>
           </div>
           <div className="about-resume-button">

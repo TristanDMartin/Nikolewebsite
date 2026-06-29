@@ -3,15 +3,17 @@ import { Link } from 'react-router-dom';
 import { projects } from '../data/projects';
 import ProjectCardVideo from './ProjectCardVideo';
 
-function getProjectImage(project) {
-  return project.image || (project.gallery && project.gallery[0]) || null;
-}
+import {
+  getProjectThumbnail,
+  hasCardVideo,
+  getCardVideoLayout,
+  getCardVideoMp4,
+  isCardImageIntrinsic,
+  getCardImageBackgroundStyle,
+} from '../utils/projectMedia';
 
-function getFirstTag(project) {
-  if (!project?.tags) {
-    return null;
-  }
-  return project.tags.split(' • ')[0].trim();
+function getProjectImage(project) {
+  return getProjectThumbnail(project);
 }
 
 export default function PortfolioIndexPage() {
@@ -25,11 +27,6 @@ export default function PortfolioIndexPage() {
           <h1 className="portfolio-hero-title">
             Selected <em>projects</em>
           </h1>
-          <p className="portfolio-hero-description">
-            Packaging, campaigns, and retail experiences for global brands —
-            the same work featured on the homepage, organized for deeper
-            exploration.
-          </p>
           <p className="portfolio-hero-meta">
             <strong>{projects.length}</strong> case studies · scroll to browse
           </p>
@@ -40,15 +37,14 @@ export default function PortfolioIndexPage() {
         <div className="portfolio-grid-container">
           <div className="portfolio-grid-header">
             <p className="site-panel-label">All projects</p>
-            <p className="portfolio-grid-meta">{projects.length} in portfolio</p>
           </div>
           <div className="portfolio-masonry-grid">
             {projects.map((project, index) => {
               const isLarge = index % 5 === 0;
               const isMedium = index % 5 === 3;
               const img = getProjectImage(project);
-              const showGridVideo = Boolean(project.cardVideo);
-              const firstTag = getFirstTag(project);
+              const showGridVideo = hasCardVideo(project);
+              const isImageIntrinsic = isCardImageIntrinsic(project);
               return (
                 <article
                   key={project.slug}
@@ -57,6 +53,7 @@ export default function PortfolioIndexPage() {
                     isLarge ? 'portfolio-item-large' : '',
                     isMedium ? 'portfolio-item-medium' : '',
                     showGridVideo ? 'portfolio-item--video-intrinsic' : '',
+                    isImageIntrinsic ? 'portfolio-item--image-intrinsic' : '',
                   ]
                     .filter(Boolean)
                     .join(' ')}
@@ -67,24 +64,26 @@ export default function PortfolioIndexPage() {
                   >
                     <div className="portfolio-item-image-wrapper">
                       {showGridVideo ? (
-                        <ProjectCardVideo src={project.cardVideo} />
+                        <ProjectCardVideo
+                          src={project.cardVideo}
+                          mp4Src={getCardVideoMp4(project)}
+                          layout={getCardVideoLayout(project)}
+                        />
+                      ) : isImageIntrinsic ? (
+                        <img
+                          src={img}
+                          alt=""
+                          className="portfolio-item-image portfolio-item-image--intrinsic"
+                          loading="lazy"
+                        />
                       ) : (
                         <div
                           className="portfolio-item-image"
-                          style={
-                            img
-                              ? {
-                                  backgroundImage: `url(${img})`,
-                                }
-                              : undefined
-                          }
+                          style={getCardImageBackgroundStyle(img, 'cover')}
                         />
                       )}
                       <div className="portfolio-item-overlay">
                         <div className="portfolio-item-content">
-                          {firstTag ? (
-                            <p className="portfolio-item-meta">{firstTag}</p>
-                          ) : null}
                           <h2 className="portfolio-item-title">
                             {project.title}
                           </h2>

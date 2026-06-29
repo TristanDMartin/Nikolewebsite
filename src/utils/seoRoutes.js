@@ -1,4 +1,5 @@
 import { projects } from '../data/projects';
+import { getGallerySrc } from './projectMedia';
 import {
   DEFAULT_DESCRIPTION,
   DEFAULT_OG_IMAGE,
@@ -19,7 +20,7 @@ function truncateDescription(text, maxLen = 158) {
 export function getProjectOgImage(project) {
   const url =
     project?.image ||
-    (project?.gallery && project.gallery[0]) ||
+    getGallerySrc(project?.gallery?.[0]) ||
     DEFAULT_OG_IMAGE;
   if (!url || url.startsWith('http')) {
     return url || DEFAULT_OG_IMAGE;

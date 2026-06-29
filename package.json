@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "rm -rf dist && vite build",
     "sync:brand-logos": "node scripts/sync-brand-logos.mjs",
+    "check:images": "node scripts/check-portfolio-images.mjs",
+    "validate:paths": "node scripts/validate-project-paths.mjs",
+    "setup:image-folders": "node scripts/setup-project-image-folders.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

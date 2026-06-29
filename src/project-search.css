@@ -1,0 +1,222 @@
+.project-search-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.78;
+  transition:
+    opacity 0.2s ease,
+    color 0.2s ease;
+}
+
+.project-search-btn:hover,
+.project-search-btn:focus-visible {
+  opacity: 1;
+}
+
+.project-search-btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.project-search-btn svg {
+  display: block;
+  width: 15px;
+  height: 15px;
+}
+
+.app-site-nav__links .project-search-btn {
+  font-family: 'Raleway', system-ui, sans-serif;
+  color: var(--ink, #161616);
+}
+
+.landing-page .nav-links .project-search-btn {
+  font-family: 'Raleway', sans-serif;
+  color: var(--ink);
+  cursor: none;
+}
+
+body.portfolio-experience.portfolio-nav-light .app-site-nav__links .project-search-btn {
+  color: var(--cream);
+}
+
+.project-search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: clamp(4.5rem, 12vh, 7rem) 1.25rem 2rem;
+  background: rgba(22, 22, 22, 0.42);
+  backdrop-filter: blur(6px);
+}
+
+.project-search-panel {
+  width: min(100%, 560px);
+  max-height: min(72vh, 640px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  background: var(--warm-white, #f7f4ef);
+  border: 1px solid rgba(22, 22, 22, 0.1);
+  box-shadow: 0 24px 64px rgba(22, 22, 22, 0.18);
+  overflow: hidden;
+}
+
+.project-search-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1rem 1rem 1.15rem;
+  border-bottom: 1px solid rgba(22, 22, 22, 0.08);
+}
+
+.project-search-header svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: rgba(22, 22, 22, 0.45);
+}
+
+.project-search-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font-family: 'Raleway', system-ui, sans-serif;
+  font-size: 1rem;
+  color: var(--ink, #161616);
+  outline: none;
+}
+
+.project-search-input::placeholder {
+  color: rgba(22, 22, 22, 0.38);
+}
+
+.project-search-close {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(22, 22, 22, 0.55);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.project-search-close:hover,
+.project-search-close:focus-visible {
+  background: rgba(22, 22, 22, 0.06);
+  color: var(--ink, #161616);
+}
+
+.project-search-meta {
+  margin: 0;
+  padding: 0.55rem 1.15rem 0;
+  font-family: 'Raleway', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(22, 22, 22, 0.42);
+}
+
+.project-search-results {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0 0.5rem 0.65rem;
+  overflow-y: auto;
+}
+
+.project-search-result {
+  margin: 0;
+}
+
+.project-search-result-link {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 0.65rem 0.65rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.project-search-result-link:hover,
+.project-search-result-link:focus-visible {
+  background: rgba(22, 22, 22, 0.06);
+}
+
+.project-search-result-thumb {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: rgba(22, 22, 22, 0.06);
+}
+
+.project-search-result-thumb--empty {
+  display: block;
+}
+
+.project-search-result-copy {
+  min-width: 0;
+}
+
+.project-search-result-title {
+  margin: 0;
+  font-family: 'Raleway', system-ui, sans-serif;
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--ink, #161616);
+}
+
+.project-search-result-tag {
+  margin: 0.2rem 0 0;
+  font-family: 'Raleway', system-ui, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(22, 22, 22, 0.45);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-search-empty {
+  margin: 0;
+  padding: 1.5rem 1.15rem 1.75rem;
+  font-family: 'Raleway', system-ui, sans-serif;
+  font-size: 0.92rem;
+  color: rgba(22, 22, 22, 0.55);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .project-search-overlay {
+    padding-top: 5rem;
+    align-items: stretch;
+  }
+
+  .project-search-panel {
+    max-height: none;
+    flex: 1;
+  }
+}

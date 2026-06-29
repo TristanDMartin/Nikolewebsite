@@ -1,5 +1,17 @@
 /* Shared primitives — landing + portfolio */
 
+.site-p1-surface {
+  background-color: var(--surface-hero);
+  background-image:
+    linear-gradient(var(--surface-hero-grid) 1px, transparent 1px),
+    linear-gradient(
+      90deg,
+      var(--surface-hero-grid) 1px,
+      transparent 1px
+    );
+  background-size: var(--surface-hero-grid-size) var(--surface-hero-grid-size);
+}
+
 .site-panel-label {
   font-family: 'Raleway', sans-serif;
   font-size: 10px;
