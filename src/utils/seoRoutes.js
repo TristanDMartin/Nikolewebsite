@@ -39,9 +39,9 @@ export function getSeoForPath(pathname) {
   if (pathname === '/portfolio') {
     return {
       ...base,
-      title: `Portfolio — ${SITE_NAME}`,
+      title: `Portfolio — ${SITE_NAME} | Creative Director NYC`,
       description:
-        'Selected packaging, campaigns, and brand work by Nikole Glenn — Creative Director & Design Strategist in New York.',
+        'Award-winning packaging design, brand identity, and creative campaigns for Colgate, Clinique, Bumble and Bumble, Yankee Candle, Sharpie. NYC Creative Director & Design Strategist portfolio.',
     };
   }
   const projectMatch = pathname.match(/^\/portfolio\/([^/]+)\/?$/);
@@ -65,30 +65,31 @@ export function getSeoForPath(pathname) {
   if (pathname === '/inquire') {
     return {
       ...base,
-      title: `Inquire — ${SITE_NAME}`,
+      title: `Hire Nikole Glenn | Creative Director & Design Strategist NYC`,
       description:
-        'Start a project conversation with Nikole Glenn — creative direction, packaging, campaigns, and brand systems.',
+        'Contact Nikole Glenn for creative direction, packaging design, brand strategy, and campaign development. NYC-based Creative Director available for projects.',
     };
   }
   if (pathname === '/about') {
     return {
       ...base,
-      title: `About — ${SITE_NAME}`,
+      title: `About Nikole Glenn | Creative Director & Brand Strategist NYC`,
       description:
-        'Creative Director & Design Strategist based in New York — brand strategy, packaging, campaigns, and retail systems.',
+        'Meet Nikole Glenn: Award-winning Creative Director & Design Strategist specializing in packaging design, brand identity, and omnichannel campaigns. Based in New York.',
     };
   }
   if (pathname === '/resume') {
     return {
       ...base,
-      title: `Résumé — ${SITE_NAME}`,
+      title: `Nikole Glenn Résumé | Creative Director Portfolio & Experience`,
       description:
-        'Résumé and background for Nikole Glenn — Creative Director & Design Strategist.',
+        'Download Nikole Glenn\'s résumé. Creative Director with expertise in packaging design, brand strategy, and campaign development for global brands.',
     };
   }
   return {
     ...base,
-    title: `${SITE_NAME} — Creative Director & Design Strategist`,
-    description: DEFAULT_DESCRIPTION,
+    title: `${SITE_NAME} — Creative Director & Design Strategist NYC | Packaging & Brand Design`,
+    description:
+      'Nikole Glenn: NYC Creative Director specializing in packaging design, brand identity, and creative campaigns for Colgate, Clinique, Bumble and Bumble, Yankee Candle, Sharpie, Graco.',
   };
 }
