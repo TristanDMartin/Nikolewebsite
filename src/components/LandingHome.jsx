@@ -1600,7 +1600,7 @@ export default function LandingHome() {
                 <BrandMarquee className="pam-brand-marquee" label="Client brands" />
                 <div className="pam-footer">
                   <a
-                    href="/assets/Resume/Nikole_Glenn_Resume_2026.pdf"
+                    href="/resume.pdf"
                     className="pam-cta"
                     target="_blank"
                     rel="noreferrer"
