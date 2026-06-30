@@ -91,6 +91,28 @@ body.portfolio-experience.portfolio-nav-light .app-site-nav__links .project-sear
   opacity: 1;
 }
 
+body.portfolio-experience.portfolio-nav-light .app-site-nav__burger {
+  color: var(--cream);
+}
+
+body.portfolio-experience.portfolio-nav-light .site-nav-mobile-drawer__links a,
+body.portfolio-experience.portfolio-nav-light .site-nav-mobile-drawer__links button,
+body.portfolio-experience.portfolio-nav-light .site-nav-mobile-drawer__links .project-search-btn {
+  color: var(--cream);
+}
+
+.page--portfolio-experience .app-site-nav--menu-open {
+  z-index: 6001;
+}
+
+.page--portfolio-experience .app-site-nav__drawer {
+  background: rgba(22, 22, 22, 0.94);
+}
+
+body.portfolio-experience.portfolio-nav-light .app-site-nav__drawer {
+  background: rgba(22, 22, 22, 0.96);
+}
+
 .page--portfolio-experience main.portfolio-index,
 .page--portfolio-experience main.portfolio-case {
   padding-top: 0;
@@ -887,12 +909,38 @@ body.portfolio-experience.portfolio-nav-light .app-site-nav__links .project-sear
 
 @media (max-width: 960px) {
   .page--portfolio-experience .app-site-nav__inner {
-    padding: 1.25rem 1.5rem;
+    padding: max(1rem, env(safe-area-inset-top, 0px)) 1.5rem 1rem;
+  }
+
+  .page--portfolio-experience .app-site-nav__burger {
+    color: var(--ink);
   }
 
   .page--portfolio-experience .portfolio-hero {
     padding: 5.5rem 1.5rem 2.5rem;
     min-height: auto;
+  }
+
+  .page--portfolio-experience .portfolio-hero-content {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .page--portfolio-experience .portfolio-hero-meta {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    line-height: 1.65;
+    max-width: 100%;
+  }
+
+  .page--portfolio-experience .portfolio-case-hero .portfolio-hero-meta {
+    font-size: clamp(0.8rem, 3.4vw, 0.95rem);
+    letter-spacing: 0.01em;
+    line-height: 1.55;
   }
 
   .page--portfolio-experience .portfolio-case-hero {
@@ -971,6 +1019,17 @@ body.portfolio-experience.portfolio-nav-light .app-site-nav__links .project-sear
   .page--portfolio-experience .portfolio-case-hero .portfolio-hero-title {
     white-space: normal;
     font-size: clamp(1.85rem, 6vw, 2.75rem);
+  }
+
+  .page--portfolio-experience .portfolio-hero-meta {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    line-height: 1.7;
+  }
+
+  .page--portfolio-experience .portfolio-case-hero .portfolio-hero-meta {
+    font-size: clamp(0.78rem, 3.6vw, 0.9rem);
+    line-height: 1.6;
   }
 
   .page--portfolio-experience .portfolio-grid-header {

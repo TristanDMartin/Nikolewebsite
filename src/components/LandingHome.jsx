@@ -18,6 +18,7 @@ import {
   buildPortfolioLinkState,
   consumeLandingReturn,
   getLandingReturnFromLocation,
+  isPageReload,
   peekLandingReturn,
   saveLandingReturn,
 } from '../utils/portfolioNavigation';
@@ -36,7 +37,10 @@ import LandingCategoriesPanel from './LandingCategoriesPanel';
 import InstagramFeed from './InstagramFeed';
 import ProjectCardVideo from './ProjectCardVideo';
 import ProjectSearchButton from './ProjectSearch';
+import SiteNavBurgerButton from './SiteNavBurgerButton';
 const HeroScrollImage = lazy(() => import('./HeroScrollImage'));
+import { useSiteNavMenu } from '../hooks/useSiteNavMenu';
+import '../mobile-site-nav.css';
 import {
   getProjectThumbnail,
   hasCardVideo,
@@ -49,6 +53,7 @@ import {
 } from '../utils/projectMedia';
 import '../landing.css';
 
+const LANDING_SITE_NAV_MENU_ID = 'landing-site-nav-menu';
 const PANEL_COUNT = 6;
 const CATEGORIES_PANEL_INDEX = 3;
 const LANDING_SPLASH_SEEN_KEY = 'nikole-landing-splash-seen';
@@ -56,8 +61,35 @@ const WORK_PAGE_SIZE = 5;
 const ABOUT_SCROLL_UNITS = 1.8;
 const LANDING_MOBILE_BREAKPOINT = 960;
 const P1_HERO_SCROLL_FRACTION = 0.5;
-const SCROLL_EASE = 0.22;
-const SCROLL_EASE_FAST = 0.32;
+const SCROLL_EASE = 0.38;
+const SCROLL_EASE_FAST = 0.52;
+
+function normalizeWheelDelta(event) {
+  const raw =
+    Math.abs(event.deltaX) > Math.abs(event.deltaY)
+      ? event.deltaX
+      : event.deltaY;
+  if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) {
+    return raw * 18;
+  }
+  if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+    return raw * window.innerHeight;
+  }
+  return raw;
+}
+
+function parsePanelDeepLinkSearch(search) {
+  const params = new URLSearchParams(search);
+  const raw = params.get('panel');
+  if (raw === null) {
+    return null;
+  }
+  const idx = Number.parseInt(raw, 10);
+  if (!Number.isFinite(idx) || idx < 0 || idx >= PANEL_COUNT) {
+    return null;
+  }
+  return idx;
+}
 
 function shouldShowLandingSplash() {
   if (typeof window === 'undefined') {
@@ -67,7 +99,7 @@ function shouldShowLandingSplash() {
     return false;
   }
   try {
-    return sessionStorage.getItem(LANDING_SPLASH_SEEN_KEY) !== '1';
+    return localStorage.getItem(LANDING_SPLASH_SEEN_KEY) !== '1';
   } catch {
     return true;
   }
@@ -75,9 +107,9 @@ function shouldShowLandingSplash() {
 
 function markLandingSplashSeen() {
   try {
-    sessionStorage.setItem(LANDING_SPLASH_SEEN_KEY, '1');
+    localStorage.setItem(LANDING_SPLASH_SEEN_KEY, '1');
   } catch {
-    // sessionStorage unavailable
+    // localStorage unavailable
   }
 }
 
@@ -295,7 +327,9 @@ export default function LandingHome() {
     p2: null,
     pam: null,
     lastPanelIdx: -1,
+    lastHideHint: null,
   });
+  const mobileScrollRafRef = useRef(null);
   const pendingLandingRestoreRef = useRef(null);
 
   const aboutMeHeroImage = aboutHeadshot;
@@ -306,13 +340,7 @@ export default function LandingHome() {
   );
   const [categoriesResetKey, setCategoriesResetKey] = useState(0);
   const [isInstagramOpen, setIsInstagramOpen] = useState(false);
-  const [showSplash, setShowSplash] = useState(() => {
-    const show = shouldShowLandingSplash();
-    if (show) {
-      markLandingSplashSeen();
-    }
-    return show;
-  });
+  const [showSplash, setShowSplash] = useState(() => shouldShowLandingSplash());
   const splashTimerRef = useRef(null);
   const p1PanelRef = useRef(null);
   const p3PanelRef = useRef(null);
@@ -320,12 +348,15 @@ export default function LandingHome() {
   const [isLandingMobile, setIsLandingMobile] = useState(() =>
     typeof window !== 'undefined' ? isLandingMobileViewport() : false,
   );
+  const { isOpen: isNavOpen, close: closeNav, toggle: toggleNav } =
+    useSiteNavMenu();
 
   const dismissSplash = useCallback(() => {
     if (splashTimerRef.current != null) {
       window.clearTimeout(splashTimerRef.current);
       splashTimerRef.current = null;
     }
+    markLandingSplashSeen();
     setShowSplash(false);
   }, []);
   const projectTotal = projects.length;
@@ -420,9 +451,16 @@ export default function LandingHome() {
     const track = trackRef.current;
     const panelIdx = getMobileActivePanelIndex(track);
     const cache = scrollUiCacheRef.current;
-    if (panelIdx !== cache.lastPanelIdx) {
+    const hideHint = window.scrollY > 64;
+    const panelChanged = panelIdx !== cache.lastPanelIdx;
+    if (panelChanged) {
       notifyCategoriesEntered(cache.lastPanelIdx, panelIdx);
       cache.lastPanelIdx = panelIdx;
+      resetMobilePanelEffects();
+    }
+    if (panelChanged || cache.lastHideHint !== hideHint) {
+      applyPanelChrome(panelIdx, hideHint);
+      cache.lastHideHint = hideHint;
     }
     const scrollHeight =
       document.documentElement.scrollHeight - window.innerHeight;
@@ -431,8 +469,6 @@ export default function LandingHome() {
     if (progressRef.current) {
       progressRef.current.style.width = `${pct}%`;
     }
-    applyPanelChrome(panelIdx, window.scrollY > 64);
-    resetMobilePanelEffects();
     const p1El = track?.querySelector('.panel.p1');
     if (p1El) {
       const rect = p1El.getBoundingClientRect();
@@ -537,13 +573,21 @@ export default function LandingHome() {
       const panels = track.querySelectorAll(':scope > .panel');
       const panel = panels[index];
       if (panel) {
-        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        panel.scrollIntoView({ behavior: 'auto', block: 'start' });
       }
       return;
     }
     scrollUiCacheRef.current.lastPanelIdx = -1;
     setScrollImmediate(getScrollXForPanelIndex(track, index));
   }, [setScrollImmediate]);
+
+  const goToPanelFromNav = useCallback(
+    (index) => {
+      closeNav();
+      goToPanel(index);
+    },
+    [closeNav, goToPanel],
+  );
 
   const scrollToCategories = useCallback(() => {
     if (isLandingMobileViewport()) {
@@ -686,33 +730,45 @@ export default function LandingHome() {
   );
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const raw = params.get('panel');
-    if (raw !== null) {
-      const idx = Number.parseInt(raw, 10);
-      if (!Number.isFinite(idx) || idx < 0 || idx >= PANEL_COUNT) {
-        return undefined;
-      }
-      const cleanup = applyLandingRestore({ panelIndex: idx, scrollX: null });
-      navigate('/', {
-        replace: true,
-        state: { landingPanel: idx, landingScrollX: null },
-      });
-      return cleanup;
+    const panelFromUrl = parsePanelDeepLinkSearch(location.search);
+    if (panelFromUrl === null) {
+      return undefined;
     }
+    navigate('/', {
+      replace: true,
+      state: { landingPanel: panelFromUrl, landingScrollX: null },
+    });
     return undefined;
-  }, [location.search, applyLandingRestore, navigate]);
+  }, [location.search, navigate]);
 
   useLayoutEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.get('panel') !== null) {
-      return undefined;
+    const panelFromUrl = parsePanelDeepLinkSearch(location.search);
+    if (panelFromUrl !== null) {
+      return applyLandingRestore({ panelIndex: panelFromUrl, scrollX: null });
     }
 
     const locationReturn = getLandingReturnFromLocation(location);
-    let restoreTarget = null;
+    const hasStateRestore = locationReturn.panelIndex !== null;
 
-    if (locationReturn.panelIndex !== null) {
+    if (isPageReload()) {
+      if (hasStateRestore) {
+        return applyLandingRestore({
+          panelIndex: locationReturn.panelIndex,
+          scrollX: locationReturn.scrollX,
+        });
+      }
+      consumeLandingReturn();
+      targetXRef.current = 0;
+      currentXRef.current = 0;
+      setScrollImmediate(0);
+      scrollUiCacheRef.current.lastPanelIdx = 0;
+      applyPanelChrome(0, false);
+      window.scrollTo(0, 0);
+      return undefined;
+    }
+
+    let restoreTarget = null;
+    if (hasStateRestore) {
       restoreTarget = {
         panelIndex: locationReturn.panelIndex,
         scrollX: locationReturn.scrollX,
@@ -732,7 +788,17 @@ export default function LandingHome() {
     location.state,
     navigationType,
     applyLandingRestore,
+    applyPanelChrome,
+    setScrollImmediate,
   ]);
+
+  useEffect(() => {
+    const previous = history.scrollRestoration;
+    history.scrollRestoration = 'manual';
+    return () => {
+      history.scrollRestoration = previous;
+    };
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.add('landing-active');
@@ -754,6 +820,7 @@ export default function LandingHome() {
       if (isMobile) {
         targetXRef.current = 0;
         currentXRef.current = 0;
+        scrollUiCacheRef.current.lastHideHint = null;
         if (trackRef.current) {
           trackRef.current.style.transform = 'none';
         }
@@ -780,10 +847,24 @@ export default function LandingHome() {
   }, [updateMobileUi, setScrollImmediate]);
 
   useEffect(() => {
-    const onScroll = () => updateMobileUi();
-    window.addEventListener('scroll', onScroll, { passive: true });
+    const scheduleMobileUiUpdate = () => {
+      if (mobileScrollRafRef.current != null) {
+        return;
+      }
+      mobileScrollRafRef.current = window.requestAnimationFrame(() => {
+        mobileScrollRafRef.current = null;
+        updateMobileUi();
+      });
+    };
+    window.addEventListener('scroll', scheduleMobileUiUpdate, { passive: true });
     updateMobileUi();
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => {
+      window.removeEventListener('scroll', scheduleMobileUiUpdate);
+      if (mobileScrollRafRef.current != null) {
+        window.cancelAnimationFrame(mobileScrollRafRef.current);
+        mobileScrollRafRef.current = null;
+      }
+    };
   }, [updateMobileUi]);
 
   useEffect(() => {
@@ -800,6 +881,9 @@ export default function LandingHome() {
   }, []);
 
   useEffect(() => {
+    if (isLandingMobile) {
+      return undefined;
+    }
     let isCancelled = false;
     const ringX = ringRef.current;
     const animateRing = () => {
@@ -819,9 +903,12 @@ export default function LandingHome() {
       isCancelled = true;
       cancelAnimationFrame(ringRaf);
     };
-  }, []);
+  }, [isLandingMobile]);
 
   useEffect(() => {
+    if (isLandingMobile) {
+      return undefined;
+    }
     const expandables = document.querySelectorAll(
       '.landing-page a, .landing-page button, .landing-page .wc, .landing-page .landing-dot',
     );
@@ -837,7 +924,7 @@ export default function LandingHome() {
         el.removeEventListener('mouseleave', onLeave);
       });
     };
-  }, []);
+  }, [isLandingMobile]);
 
   useEffect(() => {
     if (!isInstagramOpen) {
@@ -890,7 +977,7 @@ export default function LandingHome() {
 
   useEffect(() => {
     const onWheel = (e) => {
-      if (showSplash || isInstagramOpen) {
+      if (showSplash || isInstagramOpen || isLandingMobileViewport()) {
         return;
       }
       const max = getMaxScroll();
@@ -911,25 +998,26 @@ export default function LandingHome() {
         return;
       }
       e.preventDefault();
-      const delta =
-        Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-      targetXRef.current = Math.max(
-        0,
-        Math.min(targetXRef.current + delta * 1.2, max),
-      );
+      setScrollImmediate(currentXRef.current + normalizeWheelDelta(e));
     };
     window.addEventListener('wheel', onWheel, { passive: false });
     return () => window.removeEventListener('wheel', onWheel);
-  }, [getMaxScroll, showSplash, isInstagramOpen]);
+  }, [getMaxScroll, showSplash, isInstagramOpen, setScrollImmediate]);
 
   useEffect(() => {
     const onStart = (e) => {
+      if (isLandingMobileViewport()) {
+        return;
+      }
       touchStartRef.current.x = e.touches[0].clientX;
       touchStartRef.current.y = e.touches[0].clientY;
       touchStartRef.current.target = targetXRef.current;
       touchStartRef.current.axis = null;
     };
     const onMove = (e) => {
+      if (isLandingMobileViewport()) {
+        return;
+      }
       const touch = e.touches[0];
       const dx = touchStartRef.current.x - touch.clientX;
       const dy = touchStartRef.current.y - touch.clientY;
@@ -1006,25 +1094,27 @@ export default function LandingHome() {
       if (isCancelled) {
         return;
       }
-      const target = targetXRef.current;
-      let current = currentXRef.current;
-      const distance = Math.abs(target - current);
-      const ease =
-        distance > window.innerWidth * 0.2 ? SCROLL_EASE_FAST : SCROLL_EASE;
-      current += (target - current) * ease;
-      if (distance < 0.5) {
-        current = target;
-      }
-      if (trackRef.current) {
-        if (isLandingMobileViewport()) {
-          trackRef.current.style.transform = 'none';
-        } else {
-          trackRef.current.style.transform = `translate3d(${-current}px, 0, 0)`;
-        }
-      }
-      currentXRef.current = current;
       if (!isLandingMobileViewport()) {
-        updateUi(current);
+        const target = targetXRef.current;
+        let current = currentXRef.current;
+        const distance = Math.abs(target - current);
+        if (distance >= 0.5) {
+          const ease =
+            distance > window.innerWidth * 0.15
+              ? SCROLL_EASE_FAST
+              : SCROLL_EASE;
+          current += (target - current) * ease;
+          if (Math.abs(target - current) < 0.5) {
+            current = target;
+          }
+          currentXRef.current = current;
+          if (trackRef.current) {
+            trackRef.current.style.transform = `translate3d(${-current}px, 0, 0)`;
+          }
+          updateUi(current);
+        }
+      } else if (trackRef.current) {
+        trackRef.current.style.transform = 'none';
       }
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -1036,10 +1126,6 @@ export default function LandingHome() {
       }
     };
   }, [updateUi]);
-
-  useEffect(() => {
-    setScrollImmediate(0);
-  }, [setScrollImmediate]);
 
   useEffect(() => {
     if (!showSplash) {
@@ -1094,15 +1180,24 @@ export default function LandingHome() {
       <div className="cursor-dot" ref={cursorDotRef} aria-hidden="true" />
       <div className="cursor-ring" ref={cursorRingRef} aria-hidden="true" />
 
-      <nav className="landing-site-nav" aria-label="Primary">
+      <nav
+        className={`landing-site-nav${isNavOpen ? ' landing-site-nav--menu-open' : ''}`}
+        aria-label="Primary"
+      >
         <button
           type="button"
           className="nav-logo"
-          onClick={() => goToPanel(0)}
+          onClick={() => goToPanelFromNav(0)}
         >
           Nikole Glenn
         </button>
-        <ul className="nav-links">
+        <SiteNavBurgerButton
+          isOpen={isNavOpen}
+          onClick={toggleNav}
+          controlsId={LANDING_SITE_NAV_MENU_ID}
+          className="landing-site-nav__burger"
+        />
+        <ul className="nav-links nav-links--desktop">
           <li>
             <button type="button" onClick={() => goToPanel(0)}>
               Home
@@ -1136,6 +1231,56 @@ export default function LandingHome() {
           </li>
         </ul>
       </nav>
+      <div
+        id={LANDING_SITE_NAV_MENU_ID}
+        className={`site-nav-mobile-drawer landing-site-nav__drawer${isNavOpen ? ' is-open' : ''}`}
+        aria-hidden={!isNavOpen}
+      >
+        <ul className="site-nav-mobile-drawer__links">
+          <li>
+            <button type="button" onClick={() => goToPanelFromNav(0)}>
+              Home
+            </button>
+          </li>
+          <li>
+            <button
+              type="button"
+              onClick={() => goToPanelFromNav(LANDING_WORK_PANEL_INDEX)}
+            >
+              Work
+            </button>
+          </li>
+          <li>
+            <button type="button" onClick={() => goToPanelFromNav(3)}>
+              Categories
+            </button>
+          </li>
+          <li>
+            <button type="button" onClick={() => goToPanelFromNav(4)}>
+              About Me
+            </button>
+          </li>
+          <li>
+            <button type="button" onClick={() => goToPanelFromNav(5)}>
+              Contact
+            </button>
+          </li>
+          <li>
+            <ProjectSearchButton
+              getPortfolioLinkProps={getPortfolioLinkProps}
+              openPortfolioProject={openPortfolioProject}
+              onOpen={closeNav}
+            />
+          </li>
+        </ul>
+      </div>
+      <button
+        type="button"
+        className={`site-nav-mobile-backdrop landing-site-nav__backdrop${isNavOpen ? ' is-visible' : ''}`}
+        aria-label="Close menu"
+        tabIndex={isNavOpen ? 0 : -1}
+        onClick={closeNav}
+      />
 
       <div className="progress-line" ref={progressRef} aria-hidden="true" />
 
@@ -1205,13 +1350,15 @@ export default function LandingHome() {
                 </svg>
               </button>
             </div>
-            <Suspense fallback={null}>
-              <HeroScrollImage
-                isMobile={isLandingMobile}
-                desktopScrollRef={currentXRef}
-                scrollTargetRef={p1PanelRef}
-              />
-            </Suspense>
+            {!isLandingMobile ? (
+              <Suspense fallback={null}>
+                <HeroScrollImage
+                  isMobile={isLandingMobile}
+                  desktopScrollRef={currentXRef}
+                  scrollTargetRef={p1PanelRef}
+                />
+              </Suspense>
+            ) : null}
             <div className="p1-year" aria-hidden="true">
               NG — 2026
             </div>
@@ -1453,36 +1600,13 @@ export default function LandingHome() {
                 <BrandMarquee className="pam-brand-marquee" label="Client brands" />
                 <div className="pam-footer">
                   <a
-                    href="/resume.pdf"
+                    href="/assets/Resume/Nikole_Glenn_Resume_2026.pdf"
                     className="pam-cta"
                     target="_blank"
                     rel="noreferrer"
                   >
                     Resume
                   </a>
-                  <button
-                    type="button"
-                    className="pam-cta pam-cta-next"
-                    onClick={() => setIsInstagramOpen(true)}
-                    aria-label="Open Instagram feed"
-                  >
-                    <svg
-                      className="pam-cta-down-icon"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M12 5v14M6 13l6 6 6-6"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
                 </div>
               </div>
               <div className="pam-visual">

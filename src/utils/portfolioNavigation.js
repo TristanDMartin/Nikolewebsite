@@ -1,5 +1,16 @@
 export const LANDING_RETURN_KEY = 'nikole-landing-return';
 
+export function isPageReload() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  const [entry] = performance.getEntriesByType('navigation');
+  if (entry?.type) {
+    return entry.type === 'reload';
+  }
+  return performance.navigation?.type === 1;
+}
+
 export function saveLandingReturn({ panelIndex, scrollX }) {
   if (!Number.isFinite(panelIndex) || panelIndex < 0) {
     return;

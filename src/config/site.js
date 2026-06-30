@@ -1,7 +1,7 @@
 export const SITE_URL = (
   typeof import.meta.env.VITE_SITE_URL === 'string'
     ? import.meta.env.VITE_SITE_URL.replace(/\/$/, '')
-    : 'https://nikoleglenn.com'
+    : 'https://www.nikoleglenn.com'
 );
 
 export const SITE_NAME = 'Nikole Glenn';

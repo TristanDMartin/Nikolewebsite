@@ -165,6 +165,7 @@ export default function ProjectSearchButton({
   className = '',
   getPortfolioLinkProps,
   openPortfolioProject,
+  onOpen,
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -173,7 +174,10 @@ export default function ProjectSearchButton({
       <button
         type="button"
         className={['project-search-btn', className].filter(Boolean).join(' ')}
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          onOpen?.();
+          setIsOpen(true);
+        }}
         aria-label="Search projects"
       >
         <SearchIcon />

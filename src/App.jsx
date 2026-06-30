@@ -294,11 +294,20 @@ const InquirePage = () => {
 };
 
 const ScrollToTop = () => {
-  const { pathname } = useLocation();
+  const location = useLocation();
 
   useEffect(() => {
+    if (location.pathname === '/') {
+      const params = new URLSearchParams(location.search);
+      if (params.get('panel') !== null) {
+        return;
+      }
+      if (typeof location.state?.landingPanel === 'number') {
+        return;
+      }
+    }
     window.scrollTo(0, 0);
-  }, [pathname]);
+  }, [location.pathname, location.search, location.state]);
 
   return null;
 };

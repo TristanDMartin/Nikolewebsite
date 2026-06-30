@@ -2491,12 +2491,28 @@ body.landing-active {
 }
 
 @media (max-width: 960px) {
+  html.landing-active {
+    scroll-behavior: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   html.landing-active,
   body.landing-active {
     overflow-x: hidden;
     overflow-y: auto;
     height: auto;
     min-height: 100%;
+  }
+
+  body.landing-active {
+    overscroll-behavior-y: none;
+    touch-action: pan-y;
+    cursor: auto;
+  }
+
+  .landing-page .cursor-dot,
+  .landing-page .cursor-ring {
+    display: none;
   }
 
   .landing-page,
@@ -2506,6 +2522,7 @@ body.landing-active {
     min-height: 100dvh;
     overflow-x: hidden;
     overflow-y: visible;
+    touch-action: pan-y;
   }
 
   .landing-page .track-wrapper {
@@ -2538,30 +2555,23 @@ body.landing-active {
     backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(22, 22, 22, 0.06);
     gap: 0.75rem;
+    z-index: 5000;
   }
 
-  .landing-page .nav-links {
-    flex-wrap: nowrap;
-    gap: 0.5rem 1rem;
-    max-width: min(72vw, 18rem);
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    justify-content: flex-end;
-    padding-bottom: 0.15rem;
+  .landing-page .landing-site-nav--menu-open {
+    z-index: 6001;
   }
 
-  .landing-page .nav-links::-webkit-scrollbar {
+  .landing-page .nav-links--desktop {
     display: none;
   }
 
-  .landing-page .nav-links a,
-  .landing-page .nav-links button {
-    min-height: 2.75rem;
-    display: inline-flex;
-    align-items: center;
-    flex-shrink: 0;
-    font-size: 10px;
+  .landing-page .landing-site-nav__drawer {
+    z-index: 6000;
+  }
+
+  .landing-page .landing-site-nav__burger {
+    color: var(--ink);
   }
 
   .landing-page .panel-dots {
@@ -2611,13 +2621,27 @@ body.landing-active {
 
   .landing-page .panel.p1 {
     display: flex;
-    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    min-height: 100dvh;
     padding-top: 0;
   }
 
+  .landing-page .panel.p1 .hero-scroll-image-frame {
+    display: none !important;
+  }
+
   .landing-page .p1-content {
-    padding: 5.5rem 1.5rem 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    flex: 1 1 auto;
+    min-height: calc(100dvh - 5.5rem);
+    padding: 0 1.5rem;
     max-width: none;
+    box-sizing: border-box;
   }
 
   .landing-page .p1-eyebrow {
@@ -2636,9 +2660,17 @@ body.landing-active {
   }
 
   .landing-page .p1-bg-word {
-    font-size: clamp(4rem, 32vw, 10rem);
-    bottom: -2.5rem;
-    right: 6vw;
+    display: none;
+  }
+
+  .landing-page .p1-cta-btn {
+    align-self: flex-start;
+    width: auto;
+    max-width: 100%;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    padding: 1rem 2rem;
+    min-height: 3rem;
   }
 
   .landing-page .p1-year {
@@ -2660,8 +2692,7 @@ body.landing-active {
 
   .landing-page .p2-flow {
     width: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: visible;
   }
 
   .landing-page .p2-canvas {
@@ -2696,12 +2727,20 @@ body.landing-active {
     width: 100%;
   }
 
+  .landing-page .p2-showcase-wrap {
+    width: 100%;
+  }
+
   .landing-page .p2-showcase-scroll {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(2rem, 6vh, 3rem);
+    width: 100%;
+    max-width: 100%;
     padding-left: 0;
     padding-right: 0;
+    margin-right: 0;
   }
 
   .landing-page .p2-card,
@@ -2713,29 +2752,30 @@ body.landing-active {
   .landing-page .p2-card-6,
   .landing-page .p2-card-7 {
     position: static;
-    width: 100%;
     margin-top: 0;
+    margin-inline: auto;
     transform: none;
+    align-self: stretch;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .landing-page .p2-card-1 {
+    max-width: 560px;
+  }
+
+  .landing-page .p2-card-2 {
+    max-width: 720px;
+  }
+
+  .landing-page .p2-card-3 {
+    max-width: 700px;
+    align-items: center;
   }
 
   .landing-page .p2-card:hover {
     transform: none;
-  }
-
-  .landing-page .p2-card-img,
-  .landing-page .p2-card-1 .p2-card-img,
-  .landing-page .p2-card-2 .p2-card-img,
-  .landing-page .p2-card-3 .p2-card-img,
-  .landing-page .p2-card-4 .p2-card-img,
-  .landing-page .p2-card-5 .p2-card-img {
-    aspect-ratio: 4 / 3;
-    border-radius: 14px;
-  }
-
-  .landing-page .p2-card-1 .p2-card-img,
-  .landing-page .p2-card-2 .p2-card-img,
-  .landing-page .p2-card-3 .p2-card-img {
-    min-height: min(48vh, 340px);
   }
 
   .landing-page .p5-content {
@@ -2817,20 +2857,41 @@ body.landing-active {
     padding-right: 1.5rem;
   }
 
+  .landing-page .panel.pam {
+    --pam-photo-scale: 1;
+    container-type: normal;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    min-height: 100dvh;
+    max-height: none;
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+
   .landing-page .pam-inner {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1fr) clamp(4.5rem, 13vh, 9rem);
-    height: 100%;
+    grid-template-rows: auto auto;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 0;
+    gap: 0;
   }
 
   .landing-page .pam-main {
     padding:
       clamp(3.85rem, 3rem + 2.5vh, 5.5rem)
       1.5rem
-      0.65rem;
-    max-width: none;
-    gap: clamp(0.4rem, 0.75vh, 0.85rem);
-    overflow: hidden;
+      1.25rem;
+    max-width: 100%;
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    gap: clamp(0.75rem, 1.5vh, 1.25rem);
+    overflow-x: clip;
+    overflow-y: visible;
     justify-content: flex-start;
   }
 
@@ -2839,17 +2900,21 @@ body.landing-active {
   }
 
   .landing-page .pam-para {
-    font-size: clamp(0.66rem, 2.35vmin, 0.88rem);
-    line-height: 1.34;
+    font-size: clamp(0.88rem, 2.8vw, 1rem);
+    line-height: 1.55;
   }
 
   .landing-page .pam-copy {
-    gap: clamp(0.3rem, 0.55vh, 0.65rem);
+    gap: clamp(0.65rem, 1.2vh, 0.9rem);
+    max-width: 100%;
+    min-width: 0;
   }
 
   .landing-page .pam-brand-marquee {
-    margin-top: clamp(0.45rem, 0.8vh, 1rem);
-    padding-top: clamp(0.45rem, 0.8vh, 0.85rem);
+    margin-top: clamp(0.75rem, 1.5vh, 1.25rem);
+    padding-top: clamp(0.75rem, 1.2vh, 1rem);
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .landing-page .pam-brand-marquee .brand-marquee__logo {
@@ -2858,29 +2923,48 @@ body.landing-active {
   }
 
   .landing-page .pam-visual {
-    padding: 0.65rem 1.5rem 1rem;
+    padding: 0 1.5rem 2rem;
     justify-content: center;
     align-items: center;
     min-height: 0;
     height: auto;
+    width: 100%;
+    max-width: 100%;
   }
 
   .landing-page .pam-photo-shell {
-    height: 100%;
+    width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    height: auto;
     justify-content: center;
+    align-items: center;
   }
 
   .landing-page .pam-photo {
-    max-height: 100%;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: min(55dvh, 420px);
     max-width: 100%;
-    transform-origin: 50% 50%;
+    object-fit: contain;
+    object-position: center center;
+    border-radius: 14px;
+    box-shadow:
+      0 32px 80px rgba(22, 22, 22, 0.12),
+      0 4px 16px rgba(22, 22, 22, 0.06);
+    transform: none !important;
+    background: transparent;
   }
 
   .landing-page .pam-photo-placeholder {
-    width: min(92%, 420px);
-    height: 100%;
-    max-height: 100%;
-    transform-origin: 50% 50%;
+    width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    max-height: min(55dvh, 420px);
+    height: auto;
+    border-radius: 14px;
+    transform: none !important;
   }
 
   .landing-page .p3-content {
@@ -2904,21 +2988,17 @@ body.landing-active {
     padding-right: 0;
   }
 
+  .landing-page .p4-category-col.is-open .p4-category-content {
+    overflow: visible;
+  }
+
   .landing-page .p4-intro-copy {
     max-width: none;
   }
 
-  .landing-page .panel.pam {
-    --pam-photo-scale: 1;
-    height: 100dvh;
-    min-height: 100dvh;
-    max-height: 100dvh;
-    overflow: hidden;
-  }
-
   .landing-page .pam-photo,
   .landing-page .pam-photo-placeholder {
-    transform: scale(1);
+    transform: none !important;
   }
 
   .landing-page .pam-footer {
@@ -2929,12 +3009,28 @@ body.landing-active {
   .landing-page .pam-cta {
     min-height: 2.75rem;
     padding: 0.75rem 1.5rem;
+    align-self: flex-start;
+  }
+
+  .landing-page .panel.p6 {
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
+    height: auto;
+    overflow-x: clip;
   }
 
   .landing-page .p6-content {
-    padding-top: 5.5rem;
-    padding-bottom: max(5rem, calc(env(safe-area-inset-bottom, 0px) + 4rem));
-    min-height: 100dvh;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 0;
+    padding-bottom: max(2rem, calc(env(safe-area-inset-bottom, 0px) + 2rem));
+    min-height: calc(100dvh - 5.5rem);
     box-sizing: border-box;
   }
 
@@ -2986,14 +3082,6 @@ body.landing-active {
   }
 }
 
-@media (max-width: 960px) {
-  @container pam-panel (max-height: 680px) {
-    .landing-page .pam-inner {
-      grid-template-rows: minmax(0, 1fr) clamp(3.75rem, 11vh, 7rem);
-    }
-  }
-}
-
 @media (max-width: 640px) {
   .landing-page .landing-site-nav {
     flex-wrap: nowrap;
@@ -3002,24 +3090,21 @@ body.landing-active {
   }
 
   .landing-page .nav-logo {
-    flex-shrink: 0;
-    max-width: 42%;
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .landing-page .nav-links {
     flex: 1;
     min-width: 0;
-    max-width: none;
-    justify-content: flex-end;
-    gap: 0.5rem 0.85rem;
+    text-align: left;
   }
 
   .landing-page .p1-content {
     padding: 0 1.25rem;
+    min-height: calc(100dvh - 5rem);
+    align-items: flex-start;
+  }
+
+  .landing-page .p1-cta-btn {
+    font-size: 13px;
+    padding: 1.05rem 2.25rem;
+    min-height: 3.25rem;
   }
 
   .landing-page .p1-year {
@@ -3154,7 +3239,10 @@ body.landing-active {
   }
 
   .landing-page .p6-content {
-    padding: 0 1.25rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    padding-bottom: max(2rem, calc(env(safe-area-inset-bottom, 0px) + 2rem));
+    min-height: calc(100dvh - 5rem);
   }
 
   .landing-page .pam-brand-marquee .brand-marquee__logo {
@@ -3182,12 +3270,22 @@ body.landing-active {
     padding:
       clamp(3.65rem, 3rem + 2vh, 4.75rem)
       1.25rem
-      0.6rem;
-    gap: clamp(0.35rem, 0.65vh, 0.75rem);
+      1rem;
+    gap: clamp(0.65rem, 1.2vh, 0.9rem);
+  }
+
+  .landing-page .pam-para {
+    font-size: 0.92rem;
+    line-height: 1.55;
   }
 
   .landing-page .pam-visual {
-    padding: 0.5rem 1.25rem 0.85rem;
+    padding: 0 1.25rem 1.75rem;
+  }
+
+  .landing-page .pam-photo,
+  .landing-page .pam-photo-placeholder {
+    max-height: min(50dvh, 380px);
   }
 
   .landing-page .panel-dots {
