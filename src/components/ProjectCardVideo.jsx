@@ -40,7 +40,8 @@ export default function ProjectCardVideo({
   const videoRef = useRef(null);
   const [isInView, setIsInView] = useState(false);
   const useHoverPlay = playOnHover && prefersHoverPlay();
-  const [isActivated, setIsActivated] = useState(!playOnHover);
+  const shouldAutoplay = !playOnHover;
+  const [isActivated, setIsActivated] = useState(shouldAutoplay);
   const [isVideoVisible, setIsVideoVisible] = useState(false);
   const isVisible = forceLoad || isInView;
   const shouldLoad = isVisible && isActivated;
@@ -164,6 +165,7 @@ export default function ProjectCardVideo({
           muted
           loop
           playsInline
+          autoPlay={shouldAutoplay && !prefersReducedMotion()}
           preload="auto"
           poster={poster ? encodeMediaSrc(poster) : undefined}
           aria-hidden="true"

@@ -10,6 +10,7 @@ export const projects = [
     cardVideo:
       '/images/clinique-uv-solutions/thumbnail_Screen Recording 2026-05-14 at 8.18.11 PM.mp4',
     cardVideoAutoplay: true,
+    cardVideoPoster: null,
     galleryDisplay: 'native',
     gallery: [
       '/images/clinique-uv-solutions/1_before_n_after_packaging.png',

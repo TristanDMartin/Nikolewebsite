@@ -50,7 +50,6 @@ import {
   isCardImageIntrinsic,
   getWorkGridImageStyle,
   getFeaturedProjects,
-  shouldPlayCardVideoOnHover,
 } from '../utils/projectMedia';
 import '../landing.css';
 
@@ -1487,7 +1486,7 @@ export default function LandingHome() {
                                 mp4Src={getCardVideoMp4(project)}
                                 layout={getCardVideoLayout(project)}
                                 poster={getCardVideoPoster(project)}
-                                playOnHover={shouldPlayCardVideoOnHover(project)}
+                                playOnHover={false}
                               />
                             ) : null}
                           </div>
