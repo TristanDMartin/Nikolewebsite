@@ -74,7 +74,7 @@
   position: relative;
   display: block;
   box-sizing: border-box;
-  width: auto;
+  width: min(100%, calc(var(--pcv-portrait-height) * 9 / 16));
   height: var(--pcv-portrait-height);
   max-height: var(--pcv-portrait-height);
   max-width: 100%;
@@ -85,6 +85,11 @@
   background: #000;
   overflow: hidden;
   line-height: 0;
+}
+
+.pcv--portrait .pcv-poster {
+  object-fit: contain;
+  background: #000;
 }
 
 .pcv--portrait .pcv-video {

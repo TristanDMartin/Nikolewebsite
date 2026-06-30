@@ -52,8 +52,10 @@ export const projects = [
       'For the 2024 holiday season, we pivoted to a high-energy, graphic-forward aesthetic inspired by 1950s/60s Pop Art and iconic comic book motifs. As Associate Design Director, I led the end-to-end creative process, from conceptualizing the holiday theme to executing the final packaging and art direction for the campaign photography.\n\nBy blending bold, saturated palettes with classic pop-culture design elements, I directed the creative output for both print and screen. I collaborated closely with the digital team to produce over 20+ editorial assets, including high-impact imagery and dynamic animations tailored for e-commerce, organic social, and paid media channels.',
     credits:
       'Associate Digital Director: Francesca Maida · Photography Studio: Halves · Prop Stylist / Paper Artist: Eloise Corr-Danch',
-    cardVideo: '/images/bumble-2024/holiday-gift-sets-video.mp4',
+    cardVideo:
+      '/images/bumble-2024/Our limited-edition gift sets have got seasonal styling down to a work of art (and your shopping.mp4',
     cardVideoLayout: 'portrait',
+    cardVideoAutoplay: true,
     galleryDisplay: 'native',
     image: '/images/bumble-2024/2_product_one_page.png',
     gallery: [

@@ -40,8 +40,8 @@ export default function ProjectCardVideo({
   const videoRef = useRef(null);
   const [isInView, setIsInView] = useState(false);
   const useHoverPlay = playOnHover && prefersHoverPlay();
-  const [isActivated, setIsActivated] = useState(!useHoverPlay);
-  const [hasStarted, setHasStarted] = useState(false);
+  const [isActivated, setIsActivated] = useState(!playOnHover);
+  const [isVideoVisible, setIsVideoVisible] = useState(false);
   const isVisible = forceLoad || isInView;
   const shouldLoad = isVisible && isActivated;
   const intersectionMargin =
@@ -76,12 +76,15 @@ export default function ProjectCardVideo({
   }, [intersectionMargin]);
 
   useEffect(() => {
+    if (!shouldLoad) {
+      setIsVideoVisible(false);
+      return;
+    }
     const video = videoRef.current;
-    if (!video || !shouldLoad || prefersReducedMotion()) {
+    if (!video || prefersReducedMotion()) {
       return;
     }
     video.play().catch(() => {});
-    setHasStarted(true);
   }, [shouldLoad]);
 
   useEffect(() => {
@@ -94,6 +97,9 @@ export default function ProjectCardVideo({
       return;
     }
     video.pause();
+    if (!isVisible || !isActivated) {
+      setIsVideoVisible(false);
+    }
   }, [isVisible, isActivated, shouldLoad]);
 
   const handleActivate = () => {
@@ -105,7 +111,7 @@ export default function ProjectCardVideo({
   const handleDeactivate = () => {
     if (useHoverPlay) {
       setIsActivated(false);
-      setHasStarted(false);
+      setIsVideoVisible(false);
     }
   };
 
@@ -128,7 +134,7 @@ export default function ProjectCardVideo({
       : { '--pcv-max-height': maxHeight }
     : undefined;
 
-  const showPoster = poster && (!shouldLoad || !hasStarted);
+  const showPoster = Boolean(poster) && (!shouldLoad || !isVideoVisible);
 
   return (
     <div
@@ -161,6 +167,7 @@ export default function ProjectCardVideo({
           preload="auto"
           poster={poster ? encodeMediaSrc(poster) : undefined}
           aria-hidden="true"
+          onPlaying={() => setIsVideoVisible(true)}
         >
           {videoSources.map((item) => (
             <source

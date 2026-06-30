@@ -50,6 +50,7 @@ import {
   isCardImageIntrinsic,
   getWorkGridImageStyle,
   getFeaturedProjects,
+  shouldPlayCardVideoOnHover,
 } from '../utils/projectMedia';
 import '../landing.css';
 
@@ -573,7 +574,7 @@ export default function LandingHome() {
       const panels = track.querySelectorAll(':scope > .panel');
       const panel = panels[index];
       if (panel) {
-        panel.scrollIntoView({ behavior: 'auto', block: 'start' });
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
       return;
     }
@@ -1061,6 +1062,69 @@ export default function LandingHome() {
   }, [getMaxScroll]);
 
   useEffect(() => {
+    if (!isLandingMobile) {
+      return undefined;
+    }
+    let startY = 0;
+    let startX = 0;
+    let startScrollY = 0;
+    let isTracking = false;
+
+    const canInteract = () =>
+      !showSplash && !isNavOpen && !isInstagramOpen;
+
+    const onTouchStart = (event) => {
+      if (!canInteract()) {
+        return;
+      }
+      isTracking = true;
+      startY = event.touches[0].clientY;
+      startX = event.touches[0].clientX;
+      startScrollY = window.scrollY;
+    };
+
+    const onTouchEnd = (event) => {
+      if (!isTracking) {
+        return;
+      }
+      isTracking = false;
+      if (!canInteract()) {
+        return;
+      }
+      const touch = event.changedTouches[0];
+      const dy = startY - touch.clientY;
+      const dx = startX - touch.clientX;
+      if (Math.abs(dy) < 48 || Math.abs(dy) < Math.abs(dx) * 1.15) {
+        return;
+      }
+      const scrollDelta = Math.abs(window.scrollY - startScrollY);
+      const panelIdx = getMobileActivePanelIndex(trackRef.current);
+      if (dy > 0 && panelIdx < PANEL_COUNT - 1) {
+        if (panelIdx === 0 || scrollDelta < 36) {
+          goToPanel(panelIdx + 1);
+        }
+        return;
+      }
+      if (dy < 0 && panelIdx > 0 && scrollDelta < 36) {
+        goToPanel(panelIdx - 1);
+      }
+    };
+
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [
+    goToPanel,
+    isInstagramOpen,
+    isLandingMobile,
+    isNavOpen,
+    showSplash,
+  ]);
+
+  useEffect(() => {
     const onKey = (e) => {
       const vw = window.innerWidth;
       const max = getMaxScroll();
@@ -1423,6 +1487,7 @@ export default function LandingHome() {
                                 mp4Src={getCardVideoMp4(project)}
                                 layout={getCardVideoLayout(project)}
                                 poster={getCardVideoPoster(project)}
+                                playOnHover={shouldPlayCardVideoOnHover(project)}
                               />
                             ) : null}
                           </div>

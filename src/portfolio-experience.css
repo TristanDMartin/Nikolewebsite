@@ -631,6 +631,11 @@ body.portfolio-experience.portfolio-nav-light .app-site-nav__drawer {
   background: #000;
   overflow: hidden;
   border-radius: 10px;
+  justify-self: center;
+}
+
+.page--portfolio-experience .portfolio-item--video-intrinsic:has(.pcv--portrait) .portfolio-item-link {
+  margin-inline: auto;
 }
 
 .page--portfolio-experience .portfolio-item--video-intrinsic .portfolio-item-link,

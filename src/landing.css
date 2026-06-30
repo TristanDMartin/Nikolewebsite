@@ -2494,17 +2494,21 @@ body.landing-active {
   html.landing-active {
     scroll-behavior: auto;
     -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 100%;
+    scroll-snap-type: y proximity;
+    scroll-padding-top: 5.25rem;
   }
 
   html.landing-active,
   body.landing-active {
-    overflow-x: hidden;
-    overflow-y: auto;
-    height: auto;
     min-height: 100%;
   }
 
   body.landing-active {
+    overflow: visible;
+    height: auto;
     overscroll-behavior-y: none;
     touch-action: pan-y;
     cursor: auto;
@@ -2520,8 +2524,8 @@ body.landing-active {
     height: auto;
     min-height: 100vh;
     min-height: 100dvh;
-    overflow-x: hidden;
-    overflow-y: visible;
+    overflow: visible;
+    overflow-x: clip;
     touch-action: pan-y;
   }
 
@@ -2545,6 +2549,7 @@ body.landing-active {
     height: auto;
     overflow: visible;
     scroll-margin-top: 5.25rem;
+    scroll-snap-align: start;
   }
 
   .landing-page .landing-site-nav {
@@ -2626,6 +2631,7 @@ body.landing-active {
     align-items: stretch;
     min-height: 100dvh;
     padding-top: 0;
+    overflow: visible;
   }
 
   .landing-page .panel.p1 .hero-scroll-image-frame {
@@ -2772,6 +2778,10 @@ body.landing-active {
   .landing-page .p2-card-3 {
     max-width: 700px;
     align-items: center;
+  }
+
+  .landing-page .p2-card-3 .p2-card-img:has(.pcv--portrait) {
+    margin-inline: auto;
   }
 
   .landing-page .p2-card:hover {
